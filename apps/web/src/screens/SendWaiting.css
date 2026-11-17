@@ -147,6 +147,13 @@
   line-height: var(--lh-body);
 }
 
+.qr-card__timer {
+  font-size: var(--text-meta);
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+  margin-top: -6px;
+}
+
 /* 6-digit code display */
 .qr-card__code {
   padding: 16px 0;

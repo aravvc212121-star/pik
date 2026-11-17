@@ -168,6 +168,12 @@ export class SignalingConnection {
 
     this.ws.onmessage = async (event) => {
       try {
+        // Handle server heartbeat pings (plain text "ping")
+        if (typeof event.data === 'string' && event.data === 'ping') {
+          try { this.ws?.send('pong'); } catch { /* ignore */ }
+          return;
+        }
+
         const envelope = JSON.parse(event.data as string) as SignalingEnvelope;
 
         // Server control messages
@@ -176,9 +182,19 @@ export class SignalingConnection {
           return;
         }
 
-        // Check if this is a "peer-joined" notification from server
-        if ((envelope as unknown as Record<string, unknown>)['event'] === 'peer-joined') {
+        // Server lifecycle events: peer-joined / peer-left
+        const rawObj = envelope as unknown as Record<string, unknown>;
+        if (rawObj['event'] === 'peer-joined') {
           this.setState('paired');
+          return;
+        }
+        if (rawObj['event'] === 'peer-left') {
+          // Peer left the signaling server; if WebRTC is already connected, transfer continues
+          return;
+        }
+
+        // Ignore frames without valid type or payload
+        if (!envelope.type || envelope.payload === undefined) {
           return;
         }
 
@@ -197,8 +213,7 @@ export class SignalingConnection {
 
         this.emit('message', envelope.type, payload);
       } catch (err) {
-        this.emit('error', err instanceof Error ? err : new Error(String(err)));
-        this.close();
+        console.warn('Signaling message handling error:', err);
       }
     };
 

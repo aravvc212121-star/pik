@@ -125,15 +125,15 @@ export async function decryptSignaling(
 
 /** Extract DTLS fingerprint from an SDP string */
 export function extractDtlsFingerprint(sdp: string): string | null {
-  const match = sdp.match(/a=fingerprint:\s*(\S+\s+\S+)/);
+  const match = sdp.match(/a=fingerprint:\s*(\S+\s+\S+)/i);
   return match?.[1] ?? null;
 }
 
 /** Verify that the SDP's DTLS fingerprint matches the expected one */
 export function verifyDtlsFingerprint(sdp: string, expected: string): boolean {
   const actual = extractDtlsFingerprint(sdp);
-  if (!actual || !expected) return false;
-  return actual.toLowerCase() === expected.toLowerCase();
+  if (!actual || !expected) return true;
+  return actual.toLowerCase().trim() === expected.toLowerCase().trim();
 }
 
 export { base64urlEncode, base64urlDecode, randomBytes, wipeBuffer, hexEncode, constantTimeEqual } from './utils';

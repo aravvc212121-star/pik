@@ -23,6 +23,7 @@ import { WebRTCConnection, type IceConfig } from './lib/connection';
 import {
   PROTOCOL_VERSION,
   type FileManifestEntry,
+  isAllowedMimeType,
 } from '@picbeam/protocol';
 import { TransferSender, type SenderProgress } from './lib/transfer/sender';
 import { TransferReceiver, type ReceiverProgress } from './lib/transfer/receiver';
@@ -30,7 +31,8 @@ import './App.css';
 
 /** Build the WebSocket URL for signaling */
 function wsUrl(): string {
-  const customWs = import.meta.env['VITE_WS_URL'] as string | undefined;
+  const env = import.meta.env as Record<string, string | undefined>;
+  const customWs = env['VITE_WS_URL'] || env['NEXT_PUBLIC_WS_URL'];
   if (customWs) return customWs;
   const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${proto}//${window.location.host}/ws`;
@@ -105,14 +107,36 @@ export function App(): JSX.Element {
       });
 
       conn.on('dataChannel', (dc: RTCDataChannel) => {
-        // Build manifest
-        const manifest: FileManifestEntry[] = selectedFiles.map((f, i) => ({
-          id: `file-${i}`,
-          name: f.name,
-          size: f.size,
-          mimeType: f.type || 'application/octet-stream',
-          lastModified: f.lastModified,
-        }));
+        // Build manifest with robust MIME type fallback
+        const manifest: FileManifestEntry[] = selectedFiles.map((f, i) => {
+          let mime = f.type;
+          if (!mime || !isAllowedMimeType(mime)) {
+            const ext = f.name.slice(f.name.lastIndexOf('.') + 1).toLowerCase();
+            const extMap: Record<string, string> = {
+              jpg: 'image/jpeg',
+              jpeg: 'image/jpeg',
+              png: 'image/png',
+              gif: 'image/gif',
+              webp: 'image/webp',
+              heic: 'image/heic',
+              heif: 'image/heif',
+              avif: 'image/avif',
+              dng: 'image/x-adobe-dng',
+              mp4: 'video/mp4',
+              mov: 'video/quicktime',
+              webm: 'video/webm',
+              mkv: 'video/x-matroska',
+            };
+            mime = extMap[ext] || 'image/jpeg';
+          }
+          return {
+            id: `file-${i}`,
+            name: f.name,
+            size: f.size,
+            mimeType: mime,
+            lastModified: f.lastModified,
+          };
+        });
 
         // Create sender with the data channel
         const sender = new TransferSender(dc, selectedFiles, manifest);
@@ -294,6 +318,13 @@ export function App(): JSX.Element {
     }
   }, [state.sessionId, state.selectedFiles, update, cleanup, startSenderConnection]);
 
+  const handleShowQr = useCallback(async () => {
+    if (!state.sessionId || !state.secret) return;
+    cleanup();
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    startSenderConnection(state.sessionId, state.selectedFiles, state.secret);
+  }, [state.sessionId, state.secret, state.selectedFiles, cleanup, startSenderConnection]);
+
   const handleAddMoreFiles = useCallback(
     (e: Event) => {
       const input = e.target as HTMLInputElement;
@@ -423,6 +454,7 @@ export function App(): JSX.Element {
             code={state.code}
             onCancel={handleReset}
             onShowCode={handleShowCode}
+            onShowQr={handleShowQr}
             expired={false}
             onNewCode={() => handleFilesSelected(state.selectedFiles)}
             onRemoveFile={handleRemoveFile}

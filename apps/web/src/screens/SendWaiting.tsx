@@ -19,6 +19,7 @@ interface SendWaitingProps {
   code: string | null;
   onCancel: () => void;
   onShowCode: () => void;
+  onShowQr?: () => void;
   expired: boolean;
   onNewCode: () => void;
   onRemoveFile: (index: number) => void;
@@ -33,6 +34,7 @@ export function SendWaiting({
   code,
   onCancel,
   onShowCode,
+  onShowQr,
   expired,
   onNewCode,
   onRemoveFile,
@@ -40,10 +42,31 @@ export function SendWaiting({
 }: SendWaitingProps): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [showCode, setShowCode] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(300);
+  const [isExpired, setIsExpired] = useState(expired);
 
   const totalSize = files.reduce((sum, f) => sum + f.size, 0);
   const visibleThumbs = thumbnails.slice(0, 4);
   const extraCount = files.length - visibleThumbs.length;
+
+  useEffect(() => {
+    setTimeLeft(showCode ? 120 : 300);
+    setIsExpired(false);
+  }, [showCode, code]);
+
+  useEffect(() => {
+    if (isExpired) return;
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          setIsExpired(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isExpired, showCode]);
 
   useEffect(() => {
     if (canvasRef.current && qrUrl) {
@@ -60,6 +83,19 @@ export function SendWaiting({
     setShowCode(true);
     onShowCode();
   };
+
+  const handleShowQr = () => {
+    setShowCode(false);
+    onShowQr?.();
+  };
+
+  const formatTimer = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const effectiveExpired = expired || isExpired;
 
   return (
     <div class="send-waiting">
@@ -108,7 +144,7 @@ export function SendWaiting({
 
       {/* QR / Code card */}
       <div class="qr-card">
-        {!expired ? (
+        {!effectiveExpired ? (
           <>
             {/* QR view */}
             {!showCode && (
@@ -123,6 +159,9 @@ export function SendWaiting({
                 <h2 class="qr-card__title">Scan to receive</h2>
                 <p class="qr-card__body">
                   Point the other phone's camera at this code. Photos go straight to them, nothing is stored.
+                </p>
+                <p class="qr-card__timer" aria-live="polite">
+                  Expires in {formatTimer(timeLeft)}
                 </p>
               </>
             )}
@@ -139,7 +178,10 @@ export function SendWaiting({
                   )}
                 </div>
                 <p class="qr-card__body">
-                  Go to the Receive tab on the other device and type this code. It expires in 2 minutes.
+                  Go to the Receive tab on the other device and type this code.
+                </p>
+                <p class="qr-card__timer" aria-live="polite">
+                  Expires in {formatTimer(timeLeft)}
                 </p>
               </>
             )}
@@ -155,16 +197,16 @@ export function SendWaiting({
                 Show a 6-digit code instead
               </button>
             ) : (
-              <button type="button" class="qr-card__link" onClick={() => setShowCode(false)}>
+              <button type="button" class="qr-card__link" onClick={handleShowQr}>
                 Show QR code instead
               </button>
             )}
           </>
         ) : (
           <>
-            <h2 class="qr-card__title">Code expired</h2>
+            <h2 class="qr-card__title">Session expired</h2>
             <p class="qr-card__body">
-              The session timed out after 5 minutes.
+              The pairing session has timed out.
             </p>
             <Button variant="primary" onClick={onNewCode}>
               Make a new code
