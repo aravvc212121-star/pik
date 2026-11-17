@@ -253,6 +253,9 @@ export class TransferSender {
 
   /** Cancel the transfer */
   cancel(): void {
+    // Don't re-cancel or cancel after done
+    if (this.state === 'done' || this.state === 'cancelled') return;
+
     this.cancelled = true;
     this.state = 'cancelled';
     this.abortController.abort();
@@ -265,7 +268,9 @@ export class TransferSender {
   }
 
   destroy(): void {
-    this.cancel();
+    if (this.state !== 'done') {
+      this.cancel();
+    }
     this.listeners.clear();
   }
 }

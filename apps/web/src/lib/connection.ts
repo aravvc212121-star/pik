@@ -49,6 +49,7 @@ export class WebRTCConnection {
   private iceConfig: IceConfig;
   private wakeLockSentinel: WakeLockSentinel | null = null;
   private pendingCandidates: RTCIceCandidateInit[] = [];
+  private intentionallyClosed = false;
 
   constructor(
     wsUrl: string,
@@ -79,6 +80,8 @@ export class WebRTCConnection {
   }
 
   private setState(state: ConnectionState): void {
+    // Don't emit failure events after intentional teardown
+    if (this.intentionallyClosed && state === 'failed') return;
     this._state = state;
     this.emit('stateChange', state);
   }
@@ -124,14 +127,14 @@ export class WebRTCConnection {
     };
 
     this.pc.oniceconnectionstatechange = () => {
+      if (this.intentionallyClosed) return; // Suppress events after intentional teardown
       if (this.pc?.iceConnectionState === 'connected' || this.pc?.iceConnectionState === 'completed') {
         this.setState('connected');
-      } else if (
-        this.pc?.iceConnectionState === 'failed' ||
-        this.pc?.iceConnectionState === 'disconnected'
-      ) {
+      } else if (this.pc?.iceConnectionState === 'failed') {
         this.setState('failed');
       }
+      // Note: 'disconnected' is transient — don't treat it as failure.
+      // WebRTC often recovers from 'disconnected' on its own.
     };
 
     if (this.role === 'sender') {
@@ -299,6 +302,7 @@ export class WebRTCConnection {
   }
 
   close(): void {
+    this.intentionallyClosed = true;
     this.dc?.close();
     this.dc = null;
     this.pc?.close();
