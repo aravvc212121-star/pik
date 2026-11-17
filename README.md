@@ -86,7 +86,26 @@ See [THREAT_MODEL.md](docs/THREAT_MODEL.md) for the full threat model.
 
 ## Deployment
 
-See [DEPLOY.md](docs/DEPLOY.md) for step-by-step Cloudflare deployment.
+### Deploy to Render (Recommended — Free & 1-Click)
+
+1. Fork or push this repository to GitHub.
+2. In [Render Dashboard](https://dashboard.render.com), click **New +** → **Blueprint**.
+3. Select your repository. Render will automatically detect [`render.yaml`](render.yaml) and configure:
+   - **Build Command**: `npm install && npm run build`
+   - **Start Command**: `npm start`
+   - **Health Check**: `/health`
+4. Click **Apply**. Both the static PWA frontend and the WebSocket signaling server run together on a single free Web Service with automatic HTTPS!
+
+*Manual setup on Render (if not using Blueprint):*
+- Service Type: **Web Service**
+- Runtime: **Node**
+- Build Command: `npm install && npm run build`
+- Start Command: `npm start`
+
+### Other Hosting Options
+
+- **Cloudflare**: See [DEPLOY.md](docs/DEPLOY.md) for Cloudflare Pages + Worker setup.
+- **Vercel**: Push to GitHub; `vercel.json` builds the frontend into `dist/`.
 
 ## License
 
