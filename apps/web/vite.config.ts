@@ -2,10 +2,12 @@ import { defineConfig } from 'vite';
 import preact from '@preact/preset-vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import path from 'node:path';
+import { devSignalingPlugin } from './vite-plugin-signaling';
 
 export default defineConfig({
   plugins: [
     preact(),
+    devSignalingPlugin(),
     VitePWA({
       registerType: 'prompt',
       includeAssets: ['fonts/**/*.woff2', 'icons/**/*.png', 'icons/**/*.svg'],
@@ -64,15 +66,6 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
-    proxy: {
-      '/ws': {
-        target: 'http://localhost:8787',
-        ws: true,
-      },
-      '/api': {
-        target: 'http://localhost:8787',
-      },
-    },
   },
 });
 
