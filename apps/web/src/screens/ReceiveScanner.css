@@ -1,0 +1,91 @@
+.receive-scanner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--page-gap);
+  flex: 1;
+}
+
+/* Scanner panel */
+.scanner-panel {
+  flex: 1;
+  position: relative;
+  background: var(--color-scanner-bg);
+  border-radius: var(--radius-scanner);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  min-height: 280px;
+}
+
+.scanner-panel__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-scanner);
+}
+
+.scanner-panel__viewfinder {
+  position: relative;
+  z-index: 1;
+  width: 200px;
+  height: 200px;
+  border: 3px solid var(--color-scanner-text);
+  border-radius: var(--radius-viewfinder);
+  pointer-events: none;
+}
+
+.scanner-panel__caption {
+  position: relative;
+  z-index: 1;
+  color: var(--color-scanner-text);
+  font-size: var(--text-body);
+  text-align: center;
+  max-width: 240px;
+  line-height: var(--lh-body);
+}
+
+/* Code card */
+.code-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-card);
+  padding: var(--card-pad);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.code-card__label {
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.code-card__input {
+  width: 100%;
+  min-width: 0;
+  height: var(--code-input-h);
+  border: 1.5px solid var(--color-input-border);
+  border-radius: var(--radius-button);
+  font-size: 20px;
+  letter-spacing: 4px;
+  text-align: center;
+  background: var(--color-page);
+  color: var(--color-ink);
+  padding: 0 16px;
+}
+
+.code-card__input::placeholder {
+  color: var(--color-muted);
+  opacity: 0.5;
+}
+
+.code-card__input:focus {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}

@@ -1,0 +1,27 @@
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--color-pill-bg);
+  font-size: var(--text-meta);
+  font-weight: 500;
+  color: var(--color-ink);
+}
+
+.status-pill__dot {
+  width: var(--dot-size);
+  height: var(--dot-size);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-pill__dot--waiting {
+  background: var(--color-dot-waiting);
+}
+
+.status-pill__dot--connected {
+  background: var(--color-dot-connected);
+}
+

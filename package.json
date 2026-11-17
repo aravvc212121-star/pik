@@ -1,0 +1,29 @@
+{
+  "name": "picbeam",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "apps/signal",
+    "packages/protocol"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/web",
+    "dev:signal": "npm run dev --workspace=apps/signal",
+    "build": "npm run build --workspace=packages/protocol && npm run build --workspace=apps/web",
+    "build:signal": "npm run build --workspace=apps/signal",
+    "test": "npm run test --workspaces --if-present",
+    "test:unit": "npm run test:unit --workspace=apps/web",
+    "test:e2e": "npm run test:e2e --workspace=apps/web",
+    "lint": "eslint . --ext .ts,.tsx",
+    "format": "prettier --write .",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "typescript": "5.7.3",
+    "prettier": "3.5.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

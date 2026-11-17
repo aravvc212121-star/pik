@@ -1,0 +1,48 @@
+.send-transferring {
+  display: flex;
+  flex-direction: column;
+  gap: var(--page-gap);
+  flex: 1;
+}
+
+.transfer-card {
+  flex: 1;
+  background: var(--color-card);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-card);
+  padding: var(--card-pad);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.transfer-card__percent {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: var(--text-hero);
+  line-height: var(--lh-hero);
+  color: var(--color-ink);
+}
+
+.transfer-card__label {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: var(--text-sending);
+  color: var(--color-ink);
+}
+
+.transfer-card__meta {
+  font-size: var(--text-meta);
+  color: var(--color-muted);
+}
+
+.lock-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: var(--text-meta);
+  color: var(--color-muted);
+}

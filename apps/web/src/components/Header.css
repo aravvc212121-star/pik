@@ -1,0 +1,65 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header__name {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: var(--text-logo);
+  color: var(--color-ink);
+}
+
+.header__private-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--private-btn-h);
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
+  background: var(--color-card);
+  border: 1px solid var(--color-card-border);
+  font-size: var(--text-meta);
+  font-weight: 500;
+  color: var(--color-muted);
+  cursor: pointer;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.header__private-btn:hover {
+  background: var(--color-page);
+}
+
+/* Desktop top bar variant */
+@media (min-width: 900px) {
+  .header--desktop {
+    width: 100%;
+    background: var(--color-card);
+    padding: 18px 32px;
+    border-bottom: 1px solid var(--color-card-border);
+  }
+
+  .header--desktop .header__right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .header--desktop .header__info {
+    font-size: var(--text-meta);
+    font-weight: 500;
+    color: var(--color-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+

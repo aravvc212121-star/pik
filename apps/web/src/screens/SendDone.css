@@ -1,0 +1,35 @@
+.send-done {
+  display: flex;
+  flex-direction: column;
+  gap: var(--page-gap);
+  flex: 1;
+}
+
+.send-done__center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+}
+
+.send-done__title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: var(--text-title);
+  color: var(--color-ink);
+}
+
+.send-done__meta {
+  font-size: var(--text-meta);
+  color: var(--color-muted);
+}
+
+.send-done__desc {
+  font-size: var(--text-body);
+  color: var(--color-muted);
+  max-width: 260px;
+  line-height: var(--lh-body);
+}

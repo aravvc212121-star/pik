@@ -1,0 +1,53 @@
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: var(--button-h);
+  border-radius: var(--radius-button);
+  font-size: var(--text-button);
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 44px;
+  transition: opacity 0.15s;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: var(--color-ink);
+  color: var(--color-card);
+}
+
+.btn--primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.btn--secondary {
+  background: var(--color-card);
+  color: var(--color-ink);
+  border: 1.5px solid var(--color-input-border);
+}
+
+.btn--secondary:hover:not(:disabled) {
+  background: var(--color-page);
+}
+
+@media (min-width: 900px) {
+  .btn {
+    height: var(--button-h-desktop);
+    border-radius: var(--radius-button-desktop);
+  }
+}
+
+/* Dark mode primary button */
+@media (prefers-color-scheme: dark) {
+  .btn--primary {
+    background: var(--color-card);
+    color: var(--color-page);
+  }
+}
+

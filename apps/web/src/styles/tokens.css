@@ -1,0 +1,133 @@
+/**
+ * PicBeam Design Tokens
+ * Single source of truth for all colors, typography, spacing and radii.
+ * No hard-coded values elsewhere.
+ */
+
+:root {
+  /* ── Colors (Light) ── */
+  --color-page: #F4F6FA;
+  --color-card: #FFFFFF;
+  --color-card-border: #DDE2EC;
+  --color-ink: #12141A;
+  --color-muted: #4A5266;
+  --color-seg-track: #E5E9F2;
+  --color-pill-bg: #E5E7EB;
+  --color-dropzone-border: #AEB8CF;
+  --color-input-border: #C5CCDB;
+  --color-dot-waiting: #D92D20;
+  --color-dot-connected: #1E9E5A;
+  --color-scanner-bg: #12141A;
+  --color-scanner-text: #FFFFFF;
+  --color-scrim: rgba(74, 79, 92, 0.6);
+  --color-handle: #C5CCDB;
+  --color-switch-off: #C5CCDB;
+  --color-switch-on: #12141A;
+  --color-divider: #E5E7EB;
+  --color-thumb-placeholder: #E5E9F2;
+
+  /* ── Typography ── */
+  --font-heading: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', sans-serif;
+
+  /* Type scale */
+  --text-hero: 64px;
+  --text-title: 26px;
+  --text-logo: 22px;
+  --text-sheet-title: 22px;
+  --text-qr-title-desktop: 22px;
+  --text-qr-title: 20px;
+  --text-dropzone-title: 20px;
+  --text-sending: 18px;
+  --text-card-heading: 16px;
+  --text-button: 16px;
+  --text-tab: 15px;
+  --text-sheet-row: 15px;
+  --text-body: 14px;
+  --text-meta: 13px;
+  --text-footnote: 12px;
+
+  /* Line heights */
+  --lh-hero: 1;
+  --lh-body: 1.45;
+  --lh-sheet-desc: 1.4;
+
+  /* ── Radii ── */
+  --radius-button: 14px;
+  --radius-button-desktop: 12px;
+  --radius-card: 20px;
+  --radius-summary-card: 18px;
+  --radius-qr-card: 22px;
+  --radius-qr-card-desktop: 24px;
+  --radius-thumbnail: 10px;
+  --radius-thumbnail-lg: 12px;
+  --radius-pill: 999px;
+  --radius-seg-track: 14px;
+  --radius-seg-tab: 11px;
+  --radius-sheet: 26px;
+  --radius-scanner: 22px;
+  --radius-viewfinder: 28px;
+  --radius-logo: 9px;
+
+  /* ── Spacing ── */
+  --page-pad-x: 20px;
+  --page-pad-top: 20px;
+  --page-pad-bottom: 24px;
+  --page-gap: 16px;
+  --card-pad: 16px;
+  --summary-pad: 14px;
+  --qr-pad: 20px;
+
+  /* ── Sizes ── */
+  --button-h: 52px;
+  --button-h-desktop: 44px;
+  --tab-h: 44px;
+  --private-btn-h: 44px;
+  --code-input-h: 52px;
+  --progress-h: 8px;
+  --logo-size: 30px;
+  --dot-size: 8px;
+  --thumb-sm: 40px;
+  --thumb-md: 64px;
+  --check-lg: 64px;
+  --check-row: 22px;
+  --check-sheet: 20px;
+
+  /* Switch */
+  --switch-w: 48px;
+  --switch-h: 28px;
+  --switch-knob: 22px;
+  --switch-inset: 3px;
+
+  /* ── Shadows ── */
+  --shadow-tab: 0 1px 3px rgba(18, 20, 26, 0.12);
+
+  /* Desktop breakpoint */
+  --max-width-phone: 480px;
+  --max-width-container: 1080px;
+}
+
+/* ── Dark Mode ── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-page: #0F1115;
+    --color-card: #181B22;
+    --color-card-border: #2A2F3A;
+    --color-ink: #F2F4F8;
+    --color-muted: #A3ABBD;
+    --color-seg-track: #2A2F3A;
+    --color-pill-bg: #2A2F3A;
+    --color-dropzone-border: #4A5266;
+    --color-input-border: #3A4050;
+    --color-scanner-bg: #0A0C10;
+    --color-scanner-text: #F2F4F8;
+    --color-scrim: rgba(0, 0, 0, 0.7);
+    --color-handle: #3A4050;
+    --color-switch-off: #3A4050;
+    --color-switch-on: #F2F4F8;
+    --color-divider: #2A2F3A;
+    --color-thumb-placeholder: #2A2F3A;
+    --color-card: #181B22;
+  }
+}
+

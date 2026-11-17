@@ -1,0 +1,33 @@
+{
+  "name": "@picbeam/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@noble/hashes": "1.7.1",
+    "client-zip": "2.4.6",
+    "preact": "10.25.4",
+    "qr-scanner": "1.4.2",
+    "qrcode": "1.5.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.50.1",
+    "@preact/preset-vite": "2.9.4",
+    "@types/qrcode": "1.5.5",
+    "jsdom": "^31.0.1",
+    "typescript": "5.7.3",
+    "vite": "6.1.1",
+    "vite-plugin-pwa": "0.21.1",
+    "vitest": "3.0.5",
+    "workbox-precaching": "7.3.0",
+    "workbox-routing": "7.3.0"
+  }
+}
