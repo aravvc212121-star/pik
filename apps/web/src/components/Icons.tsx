@@ -160,3 +160,32 @@ export function PlusIcon({ size = 20 }: IconProps): JSX.Element {
   );
 }
 
+/** Up chevron for the flick hint */
+export function UpChevron({ size = 28, strokeWidth = 2.6 }: IconProps): JSX.Element {
+  const h = Math.round(size * (16 / 28));
+  return (
+    <svg width={size} height={h} viewBox="0 0 28 16" fill="none" aria-hidden="true">
+      <path
+        d="M4 12L14 4L24 12"
+        stroke="currentColor"
+        stroke-width={strokeWidth}
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** Three stacked up chevrons with decreasing opacity from bottom to top */
+export function FlickChevrons(): JSX.Element {
+  return (
+    <div class="flick-chevrons" aria-hidden="true">
+      <span class="flick-chevrons__top"><UpChevron /></span>
+      <span class="flick-chevrons__mid"><UpChevron /></span>
+      <span class="flick-chevrons__bot"><UpChevron /></span>
+    </div>
+  );
+}
+
+
+

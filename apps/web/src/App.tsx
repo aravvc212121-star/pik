@@ -2,7 +2,7 @@
  * PicBeam App — main application shell
  */
 import { JSX } from 'preact';
-import { useCallback, useEffect, useRef } from 'preact/hooks';
+import { useState, useCallback, useEffect, useRef } from 'preact/hooks';
 import { Header } from './components/Header';
 import { Tabs } from './components/Tabs';
 import { PrivateSheet } from './components/PrivateSheet';
@@ -10,15 +10,19 @@ import { SendPick } from './screens/SendPick';
 import { SendWaiting } from './screens/SendWaiting';
 import { SendTransferring } from './screens/SendTransferring';
 import { SendDone } from './screens/SendDone';
+import { FlickReady } from './screens/FlickReady';
+import { MidThrow } from './screens/MidThrow';
 import { ReceiveScanner } from './screens/ReceiveScanner';
 import { ReceiveConsent } from './screens/ReceiveConsent';
+import { CatchWaiting } from './screens/CatchWaiting';
+import { Catching } from './screens/Catching';
 import { Receiving } from './screens/Receiving';
 import { ReceiveDone } from './screens/ReceiveDone';
 import { ErrorScreen } from './screens/ErrorScreen';
 import { useAppState } from './lib/state';
-import { generateSessionId, generateSecret, buildQrUrl, parseQrUrl } from './lib/pairing/index';
+import { generateSessionId } from './lib/pairing/index';
 import { cleanupAll } from './lib/opfs/index';
-import { canShareFiles, shareFiles, createZip, downloadBlob } from './lib/zip/index';
+import { canShareFiles, shareFiles, createZip, downloadBlob, downloadFiles } from './lib/zip/index';
 import { WebRTCConnection, type IceConfig } from './lib/connection';
 import {
   PROTOCOL_VERSION,
@@ -27,6 +31,8 @@ import {
 } from '@picbeam/protocol';
 import { TransferSender, type SenderProgress } from './lib/transfer/sender';
 import { TransferReceiver, type ReceiverProgress } from './lib/transfer/receiver';
+import { generateThumbnail, revokeAllThumbnails } from './lib/thumbs';
+import { DONE_PAUSE } from './lib/motion';
 import './App.css';
 
 /** Build the WebSocket URL for signaling */
@@ -63,6 +69,7 @@ export function App(): JSX.Element {
     reset,
   } = useAppState();
 
+  const [receivedThumbnails, setReceivedThumbnails] = useState<string[]>([]);
   const addMoreInputRef = useRef<HTMLInputElement>(null);
   const connectionRef = useRef<WebRTCConnection | null>(null);
   const senderRef = useRef<TransferSender | null>(null);
@@ -81,6 +88,8 @@ export function App(): JSX.Element {
     receiverRef.current = null;
     connectionRef.current?.destroy();
     connectionRef.current = null;
+    revokeAllThumbnails();
+    setReceivedThumbnails([]);
   }, []);
 
   /** Full reset including connection teardown */
@@ -89,12 +98,48 @@ export function App(): JSX.Element {
     reset();
   }, [cleanup, reset]);
 
-  // ── Sender: start connection after files are selected ──
+  // ── Mobile back button: navigate within app instead of closing ──
+
+  const homeScreen = state.activeTab === 'send' ? 'send-pick' : 'receive-scanner';
+  const isHome = state.screen === homeScreen;
+
+  useEffect(() => {
+    if (!isHome && !state.privateSheetOpen) {
+      window.history.pushState({ screen: state.screen }, '');
+    }
+  }, [state.screen, isHome, state.privateSheetOpen]);
+
+  useEffect(() => {
+    if (state.privateSheetOpen) {
+      window.history.pushState({ sheet: true }, '');
+    }
+  }, [state.privateSheetOpen]);
+
+  useEffect(() => {
+    const onPopState = () => {
+      if (state.privateSheetOpen) {
+        update({ privateSheetOpen: false });
+        return;
+      }
+      if (isHome) return;
+      handleReset();
+      window.history.pushState(null, '');
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [state.screen, state.privateSheetOpen, isHome, handleReset, update]);
+
+  /** Sender: flick committed — start transfer */
+  const handleFlickCommit = useCallback(() => {
+    senderRef.current?.startTransfer();
+  }, []);
+
+  // ── Sender: start connection (always unencrypted — code mode only) ──
 
   const startSenderConnection = useCallback(
-    async (sessionId: string, selectedFiles: File[], secret?: string) => {
+    async (sessionId: string, selectedFiles: File[]) => {
       const ice = await fetchIceConfig();
-      const conn = new WebRTCConnection(wsUrl(), 'sender', sessionId, ice, secret);
+      const conn = new WebRTCConnection(wsUrl(), 'sender', sessionId, ice);
       connectionRef.current = conn;
 
       conn.on('stateChange', (connState: string) => {
@@ -138,15 +183,20 @@ export function App(): JSX.Element {
           };
         });
 
-        // Create sender with the data channel
-        const sender = new TransferSender(dc, selectedFiles, manifest);
+        // Create sender with the data channel (autoStart = false for flick gesture)
+        const sender = new TransferSender(dc, selectedFiles, manifest, false);
         senderRef.current = sender;
 
         // Listen for progress updates
         sender.onProgress((progress: SenderProgress) => {
-          if (progress.state === 'sending') {
+          if (progress.state === 'accepted') {
             update({
-              screen: 'send-transferring',
+              screen: 'flick-ready',
+              connectionState: 'connected',
+            });
+          } else if (progress.state === 'sending') {
+            update({
+              screen: 'mid-throw',
               connectionState: 'transferring',
               progress: {
                 bytesSent: progress.bytesSent,
@@ -183,33 +233,46 @@ export function App(): JSX.Element {
     [update, setError, cleanup, state.removeLocation]
   );
 
+  /** Generate a 6-digit code and start the sender connection */
   const handleFilesSelected = useCallback(
-    (files: File[]) => {
+    async (files: File[]) => {
       setFiles(files);
 
       const sessionId = generateSessionId();
-      const secret = generateSecret();
-      const domain = window.location.host;
-      const qrUrl = buildQrUrl(domain, sessionId, secret);
 
       update({
         sessionId,
-        secret,
-        qrUrl,
         screen: 'send-waiting',
+        code: null,
       });
 
-      startSenderConnection(sessionId, files, secret);
+      // Generate the 6-digit code via API
+      try {
+        const res = await fetch('/api/code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId }),
+        });
+        if (res.ok) {
+          const data = await res.json() as { code: string };
+          update({ code: data.code });
+        }
+      } catch {
+        console.warn('Could not generate code');
+      }
+
+      // Start connection (no secret — code mode is always unencrypted signaling)
+      startSenderConnection(sessionId, files);
     },
     [setFiles, update, startSenderConnection]
   );
 
-  // ── Receiver: connect after code/QR ──
+  // ── Receiver: connect after code ──
 
   const startReceiverConnection = useCallback(
-    async (sessionId: string, secret?: string) => {
+    async (sessionId: string) => {
       const ice = await fetchIceConfig();
-      const conn = new WebRTCConnection(wsUrl(), 'receiver', sessionId, ice, secret);
+      const conn = new WebRTCConnection(wsUrl(), 'receiver', sessionId, ice);
       connectionRef.current = conn;
 
       conn.on('stateChange', (connState: string) => {
@@ -220,7 +283,6 @@ export function App(): JSX.Element {
       });
 
       conn.on('dataChannel', (dc: RTCDataChannel) => {
-        // Create receiver with event handlers
         const receiver = new TransferReceiver(dc, {
           onManifest: (files: FileManifestEntry[], totalSize: number, locationStripped: boolean) => {
             update({
@@ -232,6 +294,7 @@ export function App(): JSX.Element {
           },
           onProgress: (progress: ReceiverProgress) => {
             update({
+              screen: progress.bytesReceived > 0 ? 'catching' : 'catch-waiting',
               progress: {
                 bytesSent: progress.bytesReceived,
                 totalBytes: progress.totalBytes,
@@ -243,15 +306,33 @@ export function App(): JSX.Element {
               },
             });
           },
+          onFileReceived: async (file) => {
+            try {
+              const thumbUrl = await generateThumbnail(file.blob);
+              setReceivedThumbnails((prev) => [...prev, thumbUrl]);
+            } catch {
+              setReceivedThumbnails((prev) => [...prev, URL.createObjectURL(file.blob)]);
+            }
+          },
           onComplete: (files: Array<{ name: string; blob: Blob; mimeType: string }>) => {
+            if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+              try {
+                navigator.vibrate(30);
+              } catch {
+                /* ignore */
+              }
+            }
             const received = files.map((f) => ({
               name: f.name,
               blob: f.blob,
               mimeType: f.mimeType,
               objectUrl: URL.createObjectURL(f.blob),
             }));
-            update({ screen: 'receive-done', receivedFiles: received });
-            cleanup();
+            // 600ms pause so the last landing is visible
+            setTimeout(() => {
+              update({ screen: 'receive-done', receivedFiles: received });
+              cleanup();
+            }, DONE_PAUSE);
           },
           onError: (err: Error) => {
             setError('Transfer failed', err.message, 'Try again');
@@ -263,10 +344,6 @@ export function App(): JSX.Element {
           },
         });
         receiverRef.current = receiver;
-      });
-
-      conn.on('sasWords', (words: [string, string, string, string]) => {
-        update({ sasWords: words });
       });
 
       conn.on('error', (err: Error) => {
@@ -287,44 +364,6 @@ export function App(): JSX.Element {
     addMoreInputRef.current?.click();
   }, []);
 
-  const handleShowCode = useCallback(async () => {
-    if (!state.sessionId) return;
-    try {
-      const res = await fetch('/api/code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: state.sessionId }),
-      });
-      if (!res.ok) {
-        console.warn('Failed to generate code');
-        return;
-      }
-      const data = await res.json() as { code: string };
-      update({ code: data.code });
-
-      // Tear down the existing encrypted connection so we can reconnect
-      // without encryption (code mode = no secret on either side)
-      cleanup();
-
-      // Small delay so the Durable Object processes the WebSocket close
-      // and frees the 'sender' role before we reconnect
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      // Reconnect without secret — signaling is now unencrypted,
-      // matching the receiver's code-mode connection
-      startSenderConnection(state.sessionId, state.selectedFiles);
-    } catch {
-      console.warn('Server not reachable for code generation');
-    }
-  }, [state.sessionId, state.selectedFiles, update, cleanup, startSenderConnection]);
-
-  const handleShowQr = useCallback(async () => {
-    if (!state.sessionId || !state.secret) return;
-    cleanup();
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    startSenderConnection(state.sessionId, state.selectedFiles, state.secret);
-  }, [state.sessionId, state.secret, state.selectedFiles, cleanup, startSenderConnection]);
-
   const handleAddMoreFiles = useCallback(
     (e: Event) => {
       const input = e.target as HTMLInputElement;
@@ -334,23 +373,6 @@ export function App(): JSX.Element {
       input.value = '';
     },
     [addFiles]
-  );
-
-  const handleQrScanned = useCallback(
-    (url: string) => {
-      const parsed = parseQrUrl(url);
-      if (parsed) {
-        update({
-          sessionId: parsed.sessionId,
-          secret: parsed.secret,
-        });
-        // Don't go to consent yet — wait for manifest from sender
-        startReceiverConnection(parsed.sessionId, parsed.secret);
-      } else {
-        setError('Invalid QR code', 'The scanned code is not a valid PicBeam link.', 'Try again');
-      }
-    },
-    [update, setError, startReceiverConnection]
   );
 
   const handleCodeSubmit = useCallback(
@@ -380,7 +402,7 @@ export function App(): JSX.Element {
         const data = await res.json() as { sessionId: string };
         update({ sessionId: data.sessionId });
 
-        // Connect via WebSocket (no secret in code mode) — consent screen shown when manifest arrives
+        // Connect via WebSocket — consent screen shown when manifest arrives
         startReceiverConnection(data.sessionId);
       } catch {
         setError('Network error', 'Could not reach the server. Make sure both devices are online.', 'Try again');
@@ -395,7 +417,7 @@ export function App(): JSX.Element {
     const receiver = receiverRef.current;
     if (!receiver) return;
     receiver.accept();
-    update({ screen: 'receive-transferring' });
+    update({ screen: 'catch-waiting' });
   }, [update]);
 
   const handleDecline = useCallback(() => {
@@ -406,32 +428,28 @@ export function App(): JSX.Element {
     handleReset();
   }, [handleReset]);
 
-  // Check if opened via /r#... deep link
-  useEffect(() => {
-    const hash = window.location.hash;
-    if (window.location.pathname === '/r' && hash) {
-      const parsed = parseQrUrl(window.location.href);
-      if (parsed) {
-        history.replaceState(null, '', '/');
-        update({
-          activeTab: 'receive',
-          sessionId: parsed.sessionId,
-          secret: parsed.secret,
-        });
-        startReceiverConnection(parsed.sessionId, parsed.secret);
-      }
-    }
-  }, []);
-
   const handleSaveGallery = useCallback(async () => {
+    if (state.receivedFiles.length === 0) return;
+
+    // Preserve original image quality completely - no compression, resizing, or conversion
     const files = state.receivedFiles.map(
       (f) => new File([f.blob], f.name, { type: f.mimeType })
     );
-    const shared = await shareFiles(files);
-    if (!shared) {
-      const zip = await createZip(state.receivedFiles.map((f) => ({ name: f.name, blob: f.blob })));
-      downloadBlob(zip, 'PicBeam-photos.zip');
+
+    // Use browser's Web Share API (navigator.share and navigator.canShare)
+    const result = await shareFiles(files);
+
+    // If native file sharing is unsupported or fails for reasons other than user cancellation,
+    // fall back to the existing normal download functionality
+    if (result === 'fallback') {
+      if (state.receivedFiles.length === 1) {
+        const single = state.receivedFiles[0]!;
+        downloadBlob(single.blob, single.name);
+      } else {
+        downloadFiles(state.receivedFiles.map((f) => ({ name: f.name, blob: f.blob })));
+      }
     }
+    // If result === 'cancelled', do not automatically trigger a download
   }, [state.receivedFiles]);
 
   const handleDownloadZip = useCallback(async () => {
@@ -449,27 +467,35 @@ export function App(): JSX.Element {
           <SendWaiting
             files={state.selectedFiles}
             thumbnails={state.selectedThumbnails}
-            qrUrl={state.qrUrl ?? ''}
             connectionState={state.connectionState === 'connected' ? 'connected' : 'waiting'}
             code={state.code}
             onCancel={handleReset}
-            onShowCode={handleShowCode}
-            onShowQr={handleShowQr}
-            expired={false}
             onNewCode={() => handleFilesSelected(state.selectedFiles)}
             onRemoveFile={handleRemoveFile}
             onAddMore={handleAddMore}
           />
         );
 
+      case 'flick-ready':
+        return (
+          <FlickReady
+            files={state.selectedFiles}
+            thumbnails={state.selectedThumbnails}
+            onCommit={handleFlickCommit}
+            onCancel={handleReset}
+          />
+        );
+
+      case 'mid-throw':
       case 'send-transferring':
         return (
-          <SendTransferring
+          <MidThrow
             totalFiles={state.progress?.totalFiles ?? state.selectedFiles.length}
+            sentCount={state.progress?.currentFile ?? 0}
             bytesSent={state.progress?.bytesSent ?? 0}
             totalBytes={state.progress?.totalBytes ?? 0}
-            speed={state.progress?.speed ?? 0}
             timeLeft={state.progress?.timeLeft ?? 0}
+            thumbnails={state.selectedThumbnails}
             onCancel={handleReset}
           />
         );
@@ -487,7 +513,6 @@ export function App(): JSX.Element {
       case 'receive-scanner':
         return (
           <ReceiveScanner
-            onQrScanned={handleQrScanned}
             onCodeSubmit={handleCodeSubmit}
           />
         );
@@ -502,15 +527,24 @@ export function App(): JSX.Element {
           />
         );
 
+      case 'catch-waiting':
+        return (
+          <CatchWaiting
+            totalFiles={state.manifest?.length ?? 0}
+            onCancel={handleReset}
+          />
+        );
+
+      case 'catching':
       case 'receive-transferring':
         return (
-          <Receiving
-            currentFile={state.progress?.currentFile ?? 0}
-            totalFiles={state.progress?.totalFiles ?? 0}
+          <Catching
+            completedCount={receivedThumbnails.length}
+            totalFiles={state.progress?.totalFiles ?? state.manifest?.length ?? 0}
             bytesReceived={state.progress?.bytesSent ?? 0}
-            totalBytes={state.progress?.totalBytes ?? 0}
+            totalBytes={state.progress?.totalBytes ?? state.manifestTotalSize}
             speed={state.progress?.speed ?? 0}
-            files={state.progress?.fileStatuses ?? []}
+            receivedThumbnails={receivedThumbnails}
             onCancel={handleReset}
           />
         );

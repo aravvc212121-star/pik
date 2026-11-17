@@ -5,70 +5,29 @@
   flex: 1;
 }
 
-/* Scanner panel */
-.scanner-panel {
+/* Hero text area */
+.receive-scanner__hero {
   flex: 1;
-  position: relative;
-  background: var(--color-scanner-bg);
-  border-radius: var(--radius-scanner);
-  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 20px;
-  min-height: 280px;
+  gap: 12px;
+  text-align: center;
+  padding: 24px 16px;
 }
 
-.scanner-panel--placeholder {
-  background: var(--color-seg-track);
-  color: var(--color-muted);
-  min-height: 200px;
-}
-
-.scanner-panel__caption-dark {
-  font-size: var(--text-body);
-  font-weight: 600;
+.receive-scanner__title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: var(--text-title);
   color: var(--color-ink);
-  text-align: center;
-  max-width: 260px;
-  line-height: var(--lh-body);
 }
 
-.scanner-panel__hint {
-  font-size: var(--text-meta);
-  color: var(--color-muted);
-  text-align: center;
-  max-width: 240px;
-  line-height: var(--lh-body);
-}
-
-.scanner-panel__video {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: var(--radius-scanner);
-}
-
-.scanner-panel__viewfinder {
-  position: relative;
-  z-index: 1;
-  width: 200px;
-  height: 200px;
-  border: 3px solid var(--color-scanner-text);
-  border-radius: var(--radius-viewfinder);
-  pointer-events: none;
-}
-
-.scanner-panel__caption {
-  position: relative;
-  z-index: 1;
-  color: var(--color-scanner-text);
+.receive-scanner__body {
   font-size: var(--text-body);
-  text-align: center;
-  max-width: 240px;
+  color: var(--color-muted);
+  max-width: 280px;
   line-height: var(--lh-body);
 }
 
@@ -95,17 +54,19 @@
   height: var(--code-input-h);
   border: 1.5px solid var(--color-input-border);
   border-radius: var(--radius-button);
-  font-size: 20px;
-  letter-spacing: 4px;
+  font-size: 28px;
+  letter-spacing: 6px;
   text-align: center;
   background: var(--color-page);
   color: var(--color-ink);
   padding: 0 16px;
+  font-weight: 600;
 }
 
 .code-card__input::placeholder {
   color: var(--color-muted);
   opacity: 0.5;
+  font-weight: 400;
 }
 
 .code-card__input:focus {

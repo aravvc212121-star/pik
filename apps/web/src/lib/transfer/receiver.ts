@@ -47,6 +47,7 @@ export interface ReceiverProgress {
 export type ReceiverEventHandler = {
   onManifest?: (files: FileManifestEntry[], totalSize: number, locationStripped: boolean) => void;
   onProgress?: (progress: ReceiverProgress) => void;
+  onFileReceived?: (file: { name: string; blob: Blob; mimeType: string; index: number }) => void;
   onComplete?: (files: Array<{ name: string; blob: Blob; mimeType: string }>) => void;
   onError?: (error: Error) => void;
   onCancelled?: () => void;
@@ -240,11 +241,13 @@ export class TransferReceiver {
     // Success
     this.fileStatuses[idx]!.status = 'done';
     const blob = await readFile(fileId);
-    this.receivedFiles.push({
+    const fileItem = {
       name: entry.name,
       blob,
       mimeType: entry.mimeType,
-    });
+    };
+    this.receivedFiles.push(fileItem);
+    this.handlers.onFileReceived?.({ ...fileItem, index: idx });
 
     this.sendControl({ v: PROTOCOL_VERSION, type: 'file-ok', fileId });
     this.emitProgress();

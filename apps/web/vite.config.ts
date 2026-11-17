@@ -57,9 +57,7 @@ export default defineConfig({
     sourcemap: true,
     rollupOptions: {
       output: {
-        manualChunks: {
-          qr: ['qrcode', 'qr-scanner'],
-        },
+        manualChunks: {},
       },
     },
   },

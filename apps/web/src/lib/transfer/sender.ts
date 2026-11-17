@@ -20,6 +20,7 @@ import { hexEncode } from '../crypto/utils';
 export type SenderState =
   | 'idle'
   | 'waiting-accept'
+  | 'accepted'
   | 'sending'
   | 'paused'
   | 'done'
@@ -52,12 +53,14 @@ export class TransferSender {
   private cancelled = false;
   private listeners = new Set<SenderEventHandler>();
   private abortController = new AbortController();
+  private autoStart: boolean;
 
-  constructor(dc: RTCDataChannel, files: File[], manifest: FileManifestEntry[]) {
+  constructor(dc: RTCDataChannel, files: File[], manifest: FileManifestEntry[], autoStart = true) {
     this.dc = dc;
     this.files = files;
     this.manifest = manifest;
     this.totalBytes = manifest.reduce((sum, f) => sum + f.size, 0);
+    this.autoStart = autoStart;
 
     // Set up backpressure
     this.dc.bufferedAmountLowThreshold = BACKPRESSURE_LOW;
@@ -114,7 +117,12 @@ export class TransferSender {
   private handleMessage(msg: DataChannelControlMessage): void {
     switch (msg.type) {
       case 'accept':
-        this.startTransfer();
+        if (this.autoStart) {
+          this.startTransfer();
+        } else {
+          this.state = 'accepted';
+          this.emitProgress();
+        }
         break;
       case 'decline':
         this.state = 'cancelled';
@@ -140,6 +148,7 @@ export class TransferSender {
 
   /** Start sending all files */
   async startTransfer(): Promise<void> {
+    if (this.state === 'sending' || this.state === 'done' || this.cancelled) return;
     this.state = 'sending';
     this.startTime = Date.now();
     this.emitProgress();

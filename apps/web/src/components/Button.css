@@ -9,7 +9,10 @@
   font-weight: 600;
   cursor: pointer;
   min-height: 44px;
-  transition: opacity 0.15s;
+  transition: opacity 0.15s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .btn:disabled {
@@ -22,8 +25,17 @@
   color: var(--color-card);
 }
 
-.btn--primary:hover:not(:disabled) {
-  opacity: 0.9;
+/* Touch press feedback */
+.btn--primary:active:not(:disabled) {
+  opacity: 0.85;
+  transform: scale(0.98);
+}
+
+/* Hover only on devices that actually support hover (not touch) */
+@media (hover: hover) {
+  .btn--primary:hover:not(:disabled) {
+    opacity: 0.9;
+  }
 }
 
 .btn--secondary {
@@ -32,8 +44,17 @@
   border: 1.5px solid var(--color-input-border);
 }
 
-.btn--secondary:hover:not(:disabled) {
+/* Touch press feedback */
+.btn--secondary:active:not(:disabled) {
   background: var(--color-page);
+  transform: scale(0.98);
+}
+
+/* Hover only on devices that actually support hover */
+@media (hover: hover) {
+  .btn--secondary:hover:not(:disabled) {
+    background: var(--color-page);
+  }
 }
 
 @media (min-width: 900px) {
@@ -50,4 +71,3 @@
     color: var(--color-page);
   }
 }
-

@@ -113,7 +113,7 @@
   color: var(--color-ink);
 }
 
-/* QR card */
+/* Code card */
 .qr-card {
   flex: 1;
   background: var(--color-card);
@@ -128,11 +128,6 @@
   text-align: center;
 }
 
-.qr-card__canvas {
-  width: 220px;
-  height: 220px;
-}
-
 .qr-card__title {
   font-family: var(--font-heading);
   font-weight: 700;
@@ -143,7 +138,7 @@
 .qr-card__body {
   font-size: var(--text-body);
   color: var(--color-muted);
-  max-width: 260px;
+  max-width: 280px;
   line-height: var(--lh-body);
 }
 
@@ -173,34 +168,9 @@
   color: var(--color-muted);
 }
 
-/* Toggle link */
-.qr-card__link {
-  background: none;
-  border: none;
-  padding: 4px 0;
-  font-size: var(--text-meta);
-  color: var(--color-muted);
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  transition: color 0.15s;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-}
-
-.qr-card__link:hover {
-  color: var(--color-ink);
-}
-
 @media (min-width: 900px) {
   .qr-card {
     border-radius: var(--radius-qr-card-desktop);
-  }
-
-  .qr-card__canvas {
-    width: 240px;
-    height: 240px;
   }
 
   .qr-card__title {

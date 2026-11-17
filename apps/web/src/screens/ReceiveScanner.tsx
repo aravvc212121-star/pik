@@ -1,72 +1,18 @@
 /**
- * Screen 2: Receive — scanner with code field
+ * Screen 2: Receive — enter the 6-digit code
  */
 import { JSX } from 'preact';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useState } from 'preact/hooks';
 import { Button } from '../components/Button';
-import { CameraIcon } from '../components/Icons';
 import './ReceiveScanner.css';
 
 interface ReceiveScannerProps {
-  onQrScanned: (url: string) => void;
   onCodeSubmit: (code: string) => void;
 }
 
-export function ReceiveScanner({ onQrScanned, onCodeSubmit }: ReceiveScannerProps): JSX.Element {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [cameraState, setCameraState] = useState<'loading' | 'active' | 'denied' | 'unavailable'>('loading');
+export function ReceiveScanner({ onCodeSubmit }: ReceiveScannerProps): JSX.Element {
   const [codeValue, setCodeValue] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const streamRef = useRef<MediaStream | null>(null);
-
-  useEffect(() => {
-    let scanner: any = null;
-    let cancelled = false;
-
-    async function startScanner() {
-      try {
-        // Check if running in a secure context (HTTPS or localhost)
-        if (!window.isSecureContext) {
-          setCameraState('unavailable');
-          return;
-        }
-
-        // Dynamic import for QrScanner
-        const QrScanner = (await import('qr-scanner')).default;
-
-        if (cancelled || !videoRef.current) return;
-
-        scanner = new QrScanner(
-          videoRef.current,
-          (result: { data: string }) => {
-            if (result.data) {
-              onQrScanned(result.data);
-              scanner?.stop();
-            }
-          },
-          {
-            preferredCamera: 'environment',
-            highlightScanRegion: false,
-            highlightCodeOutline: false,
-          }
-        );
-
-        await scanner.start();
-        if (!cancelled) setCameraState('active');
-      } catch {
-        if (!cancelled) setCameraState('denied');
-      }
-    }
-
-    startScanner();
-
-    return () => {
-      cancelled = true;
-      scanner?.stop();
-      scanner?.destroy();
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-    };
-  }, [onQrScanned]);
 
   const handleCodeInput = (e: Event) => {
     const input = e.target as HTMLInputElement;
@@ -91,67 +37,16 @@ export function ReceiveScanner({ onQrScanned, onCodeSubmit }: ReceiveScannerProp
 
   return (
     <div class="receive-scanner">
-      {/* Scanner panel — only when camera is active */}
-      {cameraState === 'active' && (
-        <div class="scanner-panel">
-          <video
-            ref={videoRef}
-            class="scanner-panel__video"
-            playsInline
-            muted
-            aria-label="Camera viewfinder for QR scanning"
-          />
-          <div class="scanner-panel__viewfinder" aria-hidden="true" />
-          <p class="scanner-panel__caption">
-            Point your camera at the QR code on the sender's screen
-          </p>
-        </div>
-      )}
+      <div class="receive-scanner__hero">
+        <h2 class="receive-scanner__title">Receive photos</h2>
+        <p class="receive-scanner__body">
+          Enter the 6-digit code shown on the sender's screen to start receiving photos.
+        </p>
+      </div>
 
-      {/* Loading camera */}
-      {cameraState === 'loading' && (
-        <div class="scanner-panel scanner-panel--placeholder">
-          <video
-            ref={videoRef}
-            class="scanner-panel__video"
-            playsInline
-            muted
-            style={{ display: 'none' }}
-          />
-          <p class="scanner-panel__caption-dark">Starting camera…</p>
-        </div>
-      )}
-
-      {/* Camera unavailable (HTTP) */}
-      {cameraState === 'unavailable' && (
-        <div class="scanner-panel scanner-panel--placeholder">
-          <CameraIcon size={48} />
-          <p class="scanner-panel__caption-dark">
-            Camera requires a secure connection (HTTPS).
-          </p>
-          <p class="scanner-panel__hint">
-            Use the 6-digit code from the sender's screen below.
-          </p>
-        </div>
-      )}
-
-      {/* Camera denied */}
-      {cameraState === 'denied' && (
-        <div class="scanner-panel scanner-panel--placeholder">
-          <CameraIcon size={48} />
-          <p class="scanner-panel__caption-dark">
-            Camera access was denied.
-          </p>
-          <p class="scanner-panel__hint">
-            Allow camera in your browser settings, or use the code below.
-          </p>
-        </div>
-      )}
-
-      {/* Code card */}
       <div class="code-card">
         <label class="code-card__label" for="code-input">
-          {cameraState === 'active' ? "Can't scan? Type the 6-digit code" : 'Enter the 6-digit code from the sender'}
+          6-digit code
         </label>
         <input
           id="code-input"
@@ -165,6 +60,7 @@ export function ReceiveScanner({ onQrScanned, onCodeSubmit }: ReceiveScannerProp
           onInput={handleCodeInput}
           onKeyDown={handleKeyDown}
           autoComplete="off"
+          autoFocus
           aria-label="6-digit connection code"
         />
         <Button

@@ -1,0 +1,121 @@
+/**
+ * FlickStack styles
+ * Matches PicBeam design tokens and Flick specification.
+ */
+
+.flick-stack-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 10px 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.flick-stack {
+  position: relative;
+  width: 240px;
+  height: 300px;
+  touch-action: none;
+  cursor: grab;
+  outline: none;
+  transform-origin: center bottom;
+}
+
+.flick-stack:active {
+  cursor: grabbing;
+}
+
+.flick-stack:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 6px;
+  border-radius: var(--radius-card);
+}
+
+.flick-stack__card {
+  position: absolute;
+  width: 200px;
+  height: 262px;
+  border-radius: 20px;
+  background: var(--color-card);
+  border: 6px solid #FFFFFF;
+  outline: 1px solid #DDE2EC;
+  box-shadow: 0 4px 16px rgba(18, 20, 26, 0.08);
+  overflow: hidden;
+  pointer-events: none;
+  transform-origin: center center;
+  transition: box-shadow 0.2s ease;
+}
+
+.flick-stack__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Card positions: back, middle, front */
+.flick-stack__card--back {
+  left: 10px;
+  top: 24px;
+  transform: rotate(-8deg);
+  z-index: 1;
+}
+
+.flick-stack__card--middle {
+  left: 30px;
+  top: 18px;
+  transform: rotate(7deg);
+  z-index: 2;
+}
+
+.flick-stack__card--front {
+  left: 20px;
+  top: 10px;
+  transform: rotate(0deg);
+  z-index: 3;
+}
+
+/* Front card count pill */
+.flick-stack__pill {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background: #12141A;
+  color: #FFFFFF;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* Chevrons styling */
+.flick-chevrons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 8px;
+  color: var(--color-ink);
+  transition: opacity 0.15s ease;
+}
+
+.flick-chevrons__top {
+  opacity: 0.25;
+  display: flex;
+}
+
+.flick-chevrons__mid {
+  opacity: 0.55;
+  display: flex;
+}
+
+.flick-chevrons__bot {
+  opacity: 1;
+  display: flex;
+}

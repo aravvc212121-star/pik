@@ -13,10 +13,14 @@ export type AppScreen =
   | 'send-waiting'
   | 'send-transferring'
   | 'send-done'
+  | 'flick-ready'
+  | 'mid-throw'
   | 'receive-scanner'
   | 'receive-consent'
   | 'receive-transferring'
   | 'receive-done'
+  | 'catch-waiting'
+  | 'catching'
   | 'error';
 
 export interface TransferProgress {
