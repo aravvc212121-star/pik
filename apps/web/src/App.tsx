@@ -90,7 +90,7 @@ export function App(): JSX.Element {
   // ── Sender: start connection after files are selected ──
 
   const startSenderConnection = useCallback(
-    async (sessionId: string, secret: string, selectedFiles: File[]) => {
+    async (sessionId: string, selectedFiles: File[], secret?: string) => {
       const ice = await fetchIceConfig();
       const conn = new WebRTCConnection(wsUrl(), 'sender', sessionId, ice, secret);
       connectionRef.current = conn;
@@ -175,7 +175,7 @@ export function App(): JSX.Element {
         screen: 'send-waiting',
       });
 
-      startSenderConnection(sessionId, secret, files);
+      startSenderConnection(sessionId, files, secret);
     },
     [setFiles, update, startSenderConnection]
   );
@@ -277,10 +277,22 @@ export function App(): JSX.Element {
       }
       const data = await res.json() as { code: string };
       update({ code: data.code });
+
+      // Tear down the existing encrypted connection so we can reconnect
+      // without encryption (code mode = no secret on either side)
+      cleanup();
+
+      // Small delay so the Durable Object processes the WebSocket close
+      // and frees the 'sender' role before we reconnect
+      await new Promise((resolve) => setTimeout(resolve, 600));
+
+      // Reconnect without secret — signaling is now unencrypted,
+      // matching the receiver's code-mode connection
+      startSenderConnection(state.sessionId, state.selectedFiles);
     } catch {
       console.warn('Server not reachable for code generation');
     }
-  }, [state.sessionId, update]);
+  }, [state.sessionId, state.selectedFiles, update, cleanup, startSenderConnection]);
 
   const handleAddMoreFiles = useCallback(
     (e: Event) => {

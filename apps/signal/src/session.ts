@@ -144,6 +144,8 @@ export class SessionDO implements DurableObject {
     for (const [id, peer] of this.peers) {
       if (peer.ws === ws) {
         this.peers.delete(id);
+        // Allow reconnection — unseal if a peer left
+        if (this.peers.size < 2) this.sealed = false;
         for (const [otherId] of this.peers) this.notifyPeerLeft(otherId);
         break;
       }
