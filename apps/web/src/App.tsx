@@ -15,7 +15,7 @@ import { ReceiveConsent } from './screens/ReceiveConsent';
 import { Receiving } from './screens/Receiving';
 import { ReceiveDone } from './screens/ReceiveDone';
 import { ErrorScreen } from './screens/ErrorScreen';
-import { useAppState, formatBytes } from './lib/state';
+import { useAppState } from './lib/state';
 import { generateSessionId, generateSecret, buildQrUrl, parseQrUrl } from './lib/pairing/index';
 import { cleanupAll } from './lib/opfs/index';
 import { canShareFiles, shareFiles, createZip, downloadBlob } from './lib/zip/index';
@@ -23,15 +23,15 @@ import { WebRTCConnection, type IceConfig } from './lib/connection';
 import {
   PROTOCOL_VERSION,
   type FileManifestEntry,
-  type ManifestMessage,
-  type DataChannelControlMessage,
 } from '@picbeam/protocol';
-import { TransferSender } from './lib/transfer/sender';
-import { TransferReceiver } from './lib/transfer/receiver';
+import { TransferSender, type SenderProgress } from './lib/transfer/sender';
+import { TransferReceiver, type ReceiverProgress } from './lib/transfer/receiver';
 import './App.css';
 
 /** Build the WebSocket URL for signaling */
 function wsUrl(): string {
+  const customWs = import.meta.env.VITE_WS_URL;
+  if (customWs) return customWs;
   const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${proto}//${window.location.host}/ws`;
 }
@@ -61,14 +61,10 @@ export function App(): JSX.Element {
     reset,
   } = useAppState();
 
-  // Hidden file input for "add more" flow
   const addMoreInputRef = useRef<HTMLInputElement>(null);
-
-  // Refs for connection objects (don't trigger re-renders)
   const connectionRef = useRef<WebRTCConnection | null>(null);
   const senderRef = useRef<TransferSender | null>(null);
   const receiverRef = useRef<TransferReceiver | null>(null);
-  const dataChannelRef = useRef<RTCDataChannel | null>(null);
 
   // Cleanup orphan OPFS files on mount
   useEffect(() => {
@@ -77,11 +73,12 @@ export function App(): JSX.Element {
 
   /** Tear down any active connection */
   const cleanup = useCallback(() => {
+    senderRef.current?.destroy();
+    senderRef.current = null;
+    receiverRef.current?.destroy();
+    receiverRef.current = null;
     connectionRef.current?.destroy();
     connectionRef.current = null;
-    dataChannelRef.current = null;
-    senderRef.current = null;
-    receiverRef.current = null;
   }, []);
 
   /** Full reset including connection teardown */
@@ -99,9 +96,7 @@ export function App(): JSX.Element {
       connectionRef.current = conn;
 
       conn.on('stateChange', (connState: string) => {
-        if (connState === 'signaling' || connState === 'ice') {
-          update({ connectionState: 'connected' });
-        } else if (connState === 'connected') {
+        if (connState === 'signaling' || connState === 'ice' || connState === 'connected') {
           update({ connectionState: 'connected' });
         } else if (connState === 'failed') {
           setError('Connection failed', 'Could not establish a connection with the other device.', 'Try again');
@@ -110,9 +105,7 @@ export function App(): JSX.Element {
       });
 
       conn.on('dataChannel', (dc: RTCDataChannel) => {
-        dataChannelRef.current = dc;
-
-        // Build and send manifest
+        // Build manifest
         const manifest: FileManifestEntry[] = selectedFiles.map((f, i) => ({
           id: `file-${i}`,
           name: f.name,
@@ -120,53 +113,41 @@ export function App(): JSX.Element {
           mimeType: f.type || 'application/octet-stream',
           lastModified: f.lastModified,
         }));
-        const totalSize = selectedFiles.reduce((s, f) => s + f.size, 0);
 
-        const manifestMsg: ManifestMessage = {
-          v: PROTOCOL_VERSION,
-          type: 'manifest',
-          files: manifest,
-          totalSize,
-          locationStripped: state.removeLocation,
-        };
-        dc.send(JSON.stringify(manifestMsg));
+        // Create sender with the data channel
+        const sender = new TransferSender(dc, selectedFiles, manifest);
+        senderRef.current = sender;
 
-        // Listen for accept/decline/cancel from receiver
-        dc.onmessage = (event) => {
-          if (typeof event.data === 'string') {
-            try {
-              const msg = JSON.parse(event.data) as DataChannelControlMessage;
-              if (msg.type === 'accept') {
-                update({ screen: 'send-transferring', connectionState: 'transferring' });
-                // Start sending files
-                const sender = new TransferSender(dc, selectedFiles, state.removeLocation);
-                senderRef.current = sender;
-                sender.onProgress = (bytesSent, totalBytes, speed, timeLeft, currentFile, totalFiles) => {
-                  update({
-                    progress: { bytesSent, totalBytes, speed, timeLeft, currentFile, totalFiles, fileStatuses: [] },
-                  });
-                };
-                sender.onComplete = () => {
-                  update({ screen: 'send-done', connectionState: 'done' });
-                  cleanup();
-                };
-                sender.onError = (err) => {
-                  setError('Transfer failed', err.message, 'Try again');
-                  cleanup();
-                };
-                sender.start();
-              } else if (msg.type === 'decline') {
-                setError('Declined', 'The receiver declined the transfer.', 'Try again');
-                cleanup();
-              } else if (msg.type === 'cancel') {
-                setError('Cancelled', 'The receiver cancelled the transfer.', 'Try again');
-                cleanup();
-              }
-            } catch { /* ignore parse errors */ }
+        // Listen for progress updates
+        sender.onProgress((progress: SenderProgress) => {
+          if (progress.state === 'sending') {
+            update({
+              screen: 'send-transferring',
+              connectionState: 'transferring',
+              progress: {
+                bytesSent: progress.bytesSent,
+                totalBytes: progress.totalBytes,
+                speed: progress.speed,
+                timeLeft: progress.timeLeft,
+                currentFile: progress.currentFileIndex,
+                totalFiles: progress.totalFiles,
+                fileStatuses: [],
+              },
+            });
+          } else if (progress.state === 'done') {
+            update({ screen: 'send-done', connectionState: 'done' });
+            cleanup();
+          } else if (progress.state === 'cancelled') {
+            setError('Cancelled', 'The receiver declined or cancelled the transfer.', 'Try again');
+            cleanup();
+          } else if (progress.state === 'error') {
+            setError('Transfer failed', 'An error occurred during the transfer.', 'Try again');
+            cleanup();
           }
-        };
+        });
 
-        // Wait for receiver to accept (sender stays on send-waiting with "connected" status)
+        // Send the manifest — sender waits for accept/decline internally
+        sender.sendManifest(state.removeLocation);
       });
 
       conn.on('error', (err: Error) => {
@@ -182,7 +163,6 @@ export function App(): JSX.Element {
     (files: File[]) => {
       setFiles(files);
 
-      // Generate session
       const sessionId = generateSessionId();
       const secret = generateSecret();
       const domain = window.location.host;
@@ -195,7 +175,6 @@ export function App(): JSX.Element {
         screen: 'send-waiting',
       });
 
-      // Start the sender signaling connection
       startSenderConnection(sessionId, secret, files);
     },
     [setFiles, update, startSenderConnection]
@@ -217,25 +196,49 @@ export function App(): JSX.Element {
       });
 
       conn.on('dataChannel', (dc: RTCDataChannel) => {
-        dataChannelRef.current = dc;
-
-        // Listen for manifest from sender
-        dc.onmessage = (event) => {
-          if (typeof event.data === 'string') {
-            try {
-              const msg = JSON.parse(event.data) as DataChannelControlMessage;
-              if (msg.type === 'manifest') {
-                const manifest = msg as ManifestMessage;
-                update({
-                  manifest: manifest.files,
-                  manifestTotalSize: manifest.totalSize,
-                  locationStripped: manifest.locationStripped,
-                  screen: 'receive-consent',
-                });
-              }
-            } catch { /* ignore parse errors */ }
-          }
-        };
+        // Create receiver with event handlers
+        const receiver = new TransferReceiver(dc, {
+          onManifest: (files: FileManifestEntry[], totalSize: number, locationStripped: boolean) => {
+            update({
+              manifest: files,
+              manifestTotalSize: totalSize,
+              locationStripped,
+              screen: 'receive-consent',
+            });
+          },
+          onProgress: (progress: ReceiverProgress) => {
+            update({
+              progress: {
+                bytesSent: progress.bytesReceived,
+                totalBytes: progress.totalBytes,
+                speed: progress.speed,
+                timeLeft: progress.speed > 0 ? (progress.totalBytes - progress.bytesReceived) / progress.speed : 0,
+                currentFile: progress.currentFileIndex,
+                totalFiles: progress.totalFiles,
+                fileStatuses: progress.files,
+              },
+            });
+          },
+          onComplete: (files: Array<{ name: string; blob: Blob; mimeType: string }>) => {
+            const received = files.map((f) => ({
+              name: f.name,
+              blob: f.blob,
+              mimeType: f.mimeType,
+              objectUrl: URL.createObjectURL(f.blob),
+            }));
+            update({ screen: 'receive-done', receivedFiles: received });
+            cleanup();
+          },
+          onError: (err: Error) => {
+            setError('Transfer failed', err.message, 'Try again');
+            cleanup();
+          },
+          onCancelled: () => {
+            setError('Cancelled', 'The sender cancelled the transfer.', 'Try again');
+            cleanup();
+          },
+        });
+        receiverRef.current = receiver;
       });
 
       conn.on('sasWords', (words: [string, string, string, string]) => {
@@ -252,9 +255,7 @@ export function App(): JSX.Element {
   );
 
   const handleRemoveFile = useCallback(
-    (index: number) => {
-      removeFile(index);
-    },
+    (index: number) => { removeFile(index); },
     [removeFile]
   );
 
@@ -299,8 +300,8 @@ export function App(): JSX.Element {
         update({
           sessionId: parsed.sessionId,
           secret: parsed.secret,
-          screen: 'receive-consent',
         });
+        // Don't go to consent yet — wait for manifest from sender
         startReceiverConnection(parsed.sessionId, parsed.secret);
       } else {
         setError('Invalid QR code', 'The scanned code is not a valid PicBeam link.', 'Try again');
@@ -313,7 +314,6 @@ export function App(): JSX.Element {
     async (code: string) => {
       update({ code });
 
-      // Resolve the code to get a sessionId
       try {
         const res = await fetch('/api/code/resolve', {
           method: 'POST',
@@ -335,12 +335,9 @@ export function App(): JSX.Element {
         }
 
         const data = await res.json() as { sessionId: string };
-        update({
-          sessionId: data.sessionId,
-          screen: 'receive-consent', // Will be updated to actual consent when manifest arrives
-        });
+        update({ sessionId: data.sessionId });
 
-        // Connect via WebSocket (no secret in code mode)
+        // Connect via WebSocket (no secret in code mode) — consent screen shown when manifest arrives
         startReceiverConnection(data.sessionId);
       } catch {
         setError('Network error', 'Could not reach the server. Make sure both devices are online.', 'Try again');
@@ -352,54 +349,16 @@ export function App(): JSX.Element {
   // ── Receiver: accept / decline ──
 
   const handleAccept = useCallback(() => {
-    const dc = dataChannelRef.current;
-    if (!dc || dc.readyState !== 'open') return;
-
-    // Send accept message
-    dc.send(JSON.stringify({ v: PROTOCOL_VERSION, type: 'accept' }));
+    const receiver = receiverRef.current;
+    if (!receiver) return;
+    receiver.accept();
     update({ screen: 'receive-transferring' });
-
-    // Set up receiver to listen for file chunks
-    const receiver = new TransferReceiver(dc, state.manifest ?? []);
-    receiverRef.current = receiver;
-
-    receiver.onProgress = (bytesReceived, totalBytes, speed, currentFile, totalFiles, fileStatuses) => {
-      update({
-        progress: {
-          bytesSent: bytesReceived,
-          totalBytes,
-          speed,
-          timeLeft: speed > 0 ? (totalBytes - bytesReceived) / speed : 0,
-          currentFile,
-          totalFiles,
-          fileStatuses,
-        },
-      });
-    };
-
-    receiver.onComplete = (files) => {
-      const received = files.map((f) => ({
-        name: f.name,
-        blob: f.blob,
-        mimeType: f.mimeType,
-        objectUrl: URL.createObjectURL(f.blob),
-      }));
-      update({ screen: 'receive-done', receivedFiles: received });
-      cleanup();
-    };
-
-    receiver.onError = (err) => {
-      setError('Transfer failed', err.message, 'Try again');
-      cleanup();
-    };
-
-    receiver.start();
-  }, [update, state.manifest, setError, cleanup]);
+  }, [update]);
 
   const handleDecline = useCallback(() => {
-    const dc = dataChannelRef.current;
-    if (dc && dc.readyState === 'open') {
-      dc.send(JSON.stringify({ v: PROTOCOL_VERSION, type: 'decline' }));
+    const receiver = receiverRef.current;
+    if (receiver) {
+      receiver.decline();
     }
     handleReset();
   }, [handleReset]);
@@ -413,7 +372,6 @@ export function App(): JSX.Element {
         history.replaceState(null, '', '/');
         update({
           activeTab: 'receive',
-          screen: 'receive-consent',
           sessionId: parsed.sessionId,
           secret: parsed.secret,
         });
