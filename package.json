@@ -11,7 +11,7 @@
     "dev": "npm run dev --workspace=apps/web",
     "dev:signal": "npm run dev --workspace=apps/signal",
     "build:protocol": "npm run build --workspace=packages/protocol",
-    "build": "npm run build:protocol && npm run build --workspace=apps/web",
+    "build": "npm run build:protocol && npm run build --workspace=apps/web && node scripts/copy-dist.cjs",
     "build:signal": "npm run build --workspace=apps/signal",
     "test": "npm run test --workspaces --if-present",
     "test:unit": "npm run test:unit --workspace=apps/web",
