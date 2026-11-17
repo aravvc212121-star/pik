@@ -30,7 +30,7 @@ import './App.css';
 
 /** Build the WebSocket URL for signaling */
 function wsUrl(): string {
-  const customWs = import.meta.env.VITE_WS_URL;
+  const customWs = import.meta.env['VITE_WS_URL'] as string | undefined;
   if (customWs) return customWs;
   const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${proto}//${window.location.host}/ws`;
