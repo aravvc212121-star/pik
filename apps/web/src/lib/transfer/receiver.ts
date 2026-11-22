@@ -240,7 +240,9 @@ export class TransferReceiver {
 
     // Success
     this.fileStatuses[idx]!.status = 'done';
-    const blob = await readFile(fileId);
+    const rawBlob = await readFile(fileId);
+    // Re-wrap with the correct MIME type so the browser can render it
+    const blob = new Blob([rawBlob], { type: entry.mimeType || 'image/jpeg' });
     const fileItem = {
       name: entry.name,
       blob,

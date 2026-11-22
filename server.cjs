@@ -347,11 +347,15 @@ function handleHttpRequest(req, res) {
 
         cleanExpiredCodes();
 
+        // Generate alphanumeric 6-char code (unambiguous chars)
+        const CODE_CHARS = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
         let code;
         let attempts = 0;
         do {
-          const num = crypto.randomInt(0, 1000000);
-          code = num.toString().padStart(6, '0');
+          code = '';
+          for (let i = 0; i < 6; i++) {
+            code += CODE_CHARS[crypto.randomInt(0, CODE_CHARS.length)];
+          }
           attempts++;
         } while (codeStore.has(code) && attempts < 100);
 
@@ -377,17 +381,18 @@ function handleHttpRequest(req, res) {
     readJsonBody(req)
       .then((body) => {
         const code = body && body.code;
-        if (typeof code !== 'string' || !/^\d{6}$/.test(code)) {
+        if (typeof code !== 'string' || !/^[0-9A-Z]{6}$/.test(code.toUpperCase())) {
           res.statusCode = 400;
           res.end(JSON.stringify({ error: 'Invalid code format' }));
           return;
         }
 
+        const normalizedCode = code.toUpperCase();
         cleanExpiredCodes();
 
-        const entry = codeStore.get(code);
+        const entry = codeStore.get(normalizedCode);
         if (!entry || Date.now() > entry.expires) {
-          codeStore.delete(code);
+          codeStore.delete(normalizedCode);
           res.statusCode = 404;
           res.end(JSON.stringify({ error: 'Code expired or invalid' }));
           return;
@@ -395,14 +400,14 @@ function handleHttpRequest(req, res) {
 
         entry.attempts++;
         if (entry.attempts > 5) {
-          codeStore.delete(code);
+          codeStore.delete(normalizedCode);
           res.statusCode = 429;
           res.end(JSON.stringify({ error: 'Too many attempts' }));
           return;
         }
 
         const sessionId = entry.sessionId;
-        codeStore.delete(code); // Single use
+        codeStore.delete(normalizedCode); // Single use
 
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
