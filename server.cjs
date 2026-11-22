@@ -256,6 +256,11 @@ function readJsonBody(req) {
   });
 }
 
+// ── SSE Relay for Cross-Device Mock Communication ──
+// Mirrors the Vite mockRelayPlugin so the same BroadcastChannel + SSE
+// mechanism works in production on Render / Railway.
+const sseClients = new Set();
+
 // ── HTTP Request Handler ──
 function handleHttpRequest(req, res) {
   const reqUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
@@ -279,6 +284,46 @@ function handleHttpRequest(req, res) {
       res.end();
       return;
     }
+  }
+
+  // ── SSE: Server-Sent Events stream for cross-device relay ──
+  if (pathname === '/api/mock-events' && req.method === 'GET') {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+    });
+    res.write(': connected\n\n');
+    sseClients.add(res);
+    req.on('close', () => {
+      sseClients.delete(res);
+    });
+    return;
+  }
+
+  // ── SSE: Broadcast endpoint for cross-device relay ──
+  if (pathname === '/api/mock-broadcast' && req.method === 'POST') {
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk;
+      if (body.length > MAX_MESSAGE_SIZE) {
+        req.destroy();
+      }
+    });
+    req.on('end', () => {
+      // Broadcast to all connected SSE clients
+      for (const client of sseClients) {
+        try {
+          client.write(`data: ${body}\n\n`);
+        } catch (_) {
+          sseClients.delete(client);
+        }
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+    });
+    return;
   }
 
   // ── Health Check Endpoint ──
