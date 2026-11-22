@@ -1,7 +1,7 @@
 /**
  * Transfer Receiver — receives files over WebRTC DataChannel
  *
- * Writes chunks to OPFS (or in-memory fallback).
+ * Accumulates chunks in memory, then builds the final blob.
  * Verifies each file's size and SHA-256 on arrival.
  */
 
@@ -14,7 +14,6 @@ import {
   validateControlMessage,
   parseChunkHeader,
 } from '@picbeam/protocol';
-import { writeChunk, readFile, deleteFile } from '../opfs/index';
 import { hexEncode } from '../crypto/utils';
 
 export type ReceiverState =
@@ -67,6 +66,9 @@ export class TransferReceiver {
   private handlers: ReceiverEventHandler;
   private receivedFiles: Array<{ name: string; blob: Blob; mimeType: string }> = [];
   private retryCount = new Map<string, number>();
+
+  /** In-memory chunk accumulator per file index */
+  private fileChunks = new Map<number, Uint8Array[]>();
 
   constructor(dc: RTCDataChannel, handlers: ReceiverEventHandler) {
     this.dc = dc;
@@ -160,6 +162,7 @@ export class TransferReceiver {
     this.fileStatuses[idx]!.status = 'receiving';
     this.fileHashers.set(idx, sha256.create());
     this.fileOffsets.set(idx, 0);
+    this.fileChunks.set(idx, []);
     this.emitProgress();
   }
 
@@ -171,9 +174,13 @@ export class TransferReceiver {
 
       const offset = this.fileOffsets.get(fileIndex) ?? 0;
 
-      // Write to OPFS
-      const fileId = this.manifest[fileIndex]!.id;
-      writeChunk(fileId, offset, data);
+      // Accumulate chunk in memory (no OPFS race conditions)
+      let chunks = this.fileChunks.get(fileIndex);
+      if (!chunks) {
+        chunks = [];
+        this.fileChunks.set(fileIndex, chunks);
+      }
+      chunks.push(new Uint8Array(data));
 
       // Update hasher
       const hasher = this.fileHashers.get(fileIndex);
@@ -196,7 +203,7 @@ export class TransferReceiver {
     }
   }
 
-  private async handleFileEnd(fileId: string, expectedHash: string): Promise<void> {
+  private handleFileEnd(fileId: string, expectedHash: string): void {
     const idx = this.manifest.findIndex((f) => f.id === fileId);
     if (idx === -1) return;
 
@@ -212,6 +219,7 @@ export class TransferReceiver {
       const retries = this.retryCount.get(fileId) ?? 0;
       if (retries < 1) {
         this.retryCount.set(fileId, retries + 1);
+        this.fileChunks.delete(idx);
         this.sendControl({ v: PROTOCOL_VERSION, type: 'file-bad', fileId, reason: 'Size mismatch' });
         return;
       }
@@ -228,7 +236,7 @@ export class TransferReceiver {
         this.retryCount.set(fileId, retries + 1);
         this.fileHashers.set(idx, sha256.create());
         this.fileOffsets.set(idx, 0);
-        await deleteFile(fileId);
+        this.fileChunks.delete(idx);
         this.sendControl({ v: PROTOCOL_VERSION, type: 'file-bad', fileId, reason: 'Hash mismatch' });
         return;
       }
@@ -238,11 +246,12 @@ export class TransferReceiver {
       return;
     }
 
-    // Success
+    // Success — build blob from accumulated chunks with correct MIME type
+    const chunks = this.fileChunks.get(idx) ?? [];
+    const blob = new Blob(chunks, { type: entry.mimeType || 'image/jpeg' });
+    this.fileChunks.delete(idx); // Free memory
+
     this.fileStatuses[idx]!.status = 'done';
-    const rawBlob = await readFile(fileId);
-    // Re-wrap with the correct MIME type so the browser can render it
-    const blob = new Blob([rawBlob], { type: entry.mimeType || 'image/jpeg' });
     const fileItem = {
       name: entry.name,
       blob,
@@ -292,13 +301,10 @@ export class TransferReceiver {
     this.handlers.onCancelled?.();
   }
 
-  private async cleanup(): Promise<void> {
-    // Delete all temp files
-    for (const entry of this.manifest) {
-      await deleteFile(entry.id);
-    }
+  private cleanup(): void {
     this.fileHashers.clear();
     this.fileOffsets.clear();
+    this.fileChunks.clear();
   }
 
   destroy(): void {

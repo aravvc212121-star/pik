@@ -367,6 +367,10 @@ export class WebRTCSession implements Session {
 
           onProgress: (p) => {
             if (this._destroyed) return;
+            // Transition to 'transferring' when first progress arrives
+            if (p.state === 'receiving' && this._state !== 'transferring') {
+              this.setState('transferring');
+            }
             this._progress = {
               bytes: p.bytesReceived,
               total: p.totalBytes,
