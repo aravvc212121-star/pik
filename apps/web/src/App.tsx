@@ -1,10 +1,12 @@
 /**
  * PicBeam App — UI-only redesign driven by Session interface.
  * No tabs, no QR, no word verification. Split Home → code-only flow.
- * Runs against MockSession for testing without a backend.
+ * Uses WebRTCSession for real E2E encrypted device-to-device transfer,
+ * with MockSession as fallback for local development.
  */
 import { JSX } from 'preact';
 import { useState, useCallback, useEffect, useRef } from 'preact/hooks';
+import { WebRTCSession } from './session/webrtc';
 import { MockSession } from './session/mock';
 import type { Session, SessionState, FileInfo, ReceivedFileData, TransferProgress, SessionError } from './session/types';
 import { Home } from './screens/Home';
@@ -246,9 +248,12 @@ export function App(): JSX.Element {
   }, []);
 
   // ── Create and wire up a session ──
+  // Use WebRTCSession for real E2E encrypted P2P transfer in production,
+  // MockSession as fallback for local development without a backend.
+  const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
 
   const createSession = useCallback((): Session => {
-    const session = new MockSession();
+    const session: Session = isProduction ? new WebRTCSession() : new MockSession();
     sessionRef.current = session;
 
     session.on('codeReady', (c: string, exp: number) => {

@@ -10,3 +10,4 @@ export type {
 } from './types';
 
 export { MockSession } from './mock';
+export { WebRTCSession } from './webrtc';
