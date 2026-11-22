@@ -250,7 +250,10 @@ export function App(): JSX.Element {
   // ── Create and wire up a session ──
   // Use WebRTCSession for real E2E encrypted P2P transfer in production,
   // MockSession as fallback for local development without a backend.
-  const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+  const isProduction = typeof window !== 'undefined'
+    && window.location.hostname !== 'localhost'
+    && window.location.hostname !== '127.0.0.1'
+    && !/^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(window.location.hostname);
 
   const createSession = useCallback((): Session => {
     const session: Session = isProduction ? new WebRTCSession() : new MockSession();

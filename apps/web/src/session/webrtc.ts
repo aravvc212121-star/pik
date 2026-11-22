@@ -23,7 +23,6 @@ import type {
 } from './types';
 import {
   generateSessionId,
-  generateSecret,
   SignalingConnection,
 } from '../lib/pairing/index';
 import type { IceConfig } from '../lib/connection';
@@ -112,7 +111,6 @@ export class WebRTCSession implements Session {
   private _timers: ReturnType<typeof setTimeout>[] = [];
 
   private _sessionId: string | null = null;
-  private _secret: string | null = null;
   private _connection: WebRTCConnection | null = null;
   private _transferSender: TransferSender | null = null;
   private _transferReceiver: TransferReceiver | null = null;
@@ -167,9 +165,9 @@ export class WebRTCSession implements Session {
     this.setState('picking');
 
     try {
-      // 1. Generate session ID and secret
+      // 1. Generate session ID (no secret — code-flow uses unencrypted
+      //    signaling; the WebRTC DTLS layer encrypts the data channel)
       this._sessionId = generateSessionId();
-      this._secret = generateSecret();
 
       // 2. Register a 6-digit code with the server
       const rawCode = await apiGenerateCode(this._sessionId);
@@ -179,14 +177,13 @@ export class WebRTCSession implements Session {
       this.setState('code-ready');
       this.emit('codeReady', this._code, this._expiresAt);
 
-      // 3. Connect to signaling server as sender
+      // 3. Connect to signaling server as sender (no secret → plain signaling)
       const iceConfig = await fetchIceConfig();
       this._connection = new WebRTCConnection(
         getWsUrl(),
         'sender',
         this._sessionId,
-        iceConfig,
-        this._secret
+        iceConfig
       );
 
       this._connection.on('stateChange', (state) => {
