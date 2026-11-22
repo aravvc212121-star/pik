@@ -117,7 +117,7 @@
 @media (min-width: 900px) {
   .pickphotos-root .screen-container {
     max-width: 480px;
-    padding-top: 72px;
+    padding-top: 28px;
     padding-bottom: 48px;
   }
 }

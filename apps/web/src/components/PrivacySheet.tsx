@@ -71,16 +71,61 @@ export function PrivacySheet({
     };
   }, [open, onClose]);
 
-  // Swipe down to close
+  // Interactive pull-down to dismiss gesture
   const touchStartY = useRef(0);
+  const touchStartTime = useRef(0);
+  const isDragging = useRef(false);
+  const dragOffsetY = useRef(0);
+
   const handleTouchStart = useCallback((e: TouchEvent) => {
+    // Only drag down if scrolled to the top
+    if (sheetRef.current && sheetRef.current.scrollTop > 4) return;
     touchStartY.current = e.touches[0]?.clientY ?? 0;
+    touchStartTime.current = Date.now();
+    isDragging.current = true;
+    dragOffsetY.current = 0;
   }, []);
-  const handleTouchEnd = useCallback((e: TouchEvent) => {
-    const endY = e.changedTouches[0]?.clientY ?? 0;
-    if (endY - touchStartY.current > 80) {
-      onClose();
+
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    if (!isDragging.current || !sheetRef.current) return;
+    const currentY = e.touches[0]?.clientY ?? 0;
+    const diffY = currentY - touchStartY.current;
+
+    if (diffY > 0) {
+      dragOffsetY.current = diffY;
+      sheetRef.current.style.transition = 'none';
+      sheetRef.current.style.transform = `translateY(${diffY}px)`;
+    } else {
+      dragOffsetY.current = 0;
+      sheetRef.current.style.transform = 'translateY(0px)';
     }
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    if (!isDragging.current || !sheetRef.current) return;
+    isDragging.current = false;
+
+    const diffY = dragOffsetY.current;
+    const elapsed = Date.now() - touchStartTime.current;
+    const velocity = diffY / Math.max(elapsed, 1);
+
+    // If dragged down past 80px or flicked down, animate down automatically and close
+    if (diffY > 80 || velocity > 0.3) {
+      sheetRef.current.style.transition = 'transform 0.22s cubic-bezier(0.32, 0, 0.67, 0)';
+      sheetRef.current.style.transform = 'translateY(100%)';
+      setTimeout(() => {
+        if (sheetRef.current) {
+          sheetRef.current.style.transform = '';
+          sheetRef.current.style.transition = '';
+        }
+        onClose();
+      }, 220);
+    } else {
+      // Snap back up smoothly
+      sheetRef.current.style.transition = 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)';
+      sheetRef.current.style.transform = 'translateY(0px)';
+    }
+    dragOffsetY.current = 0;
   }, [onClose]);
 
   if (!open) return null;
@@ -95,6 +140,7 @@ export function PrivacySheet({
         aria-label="Privacy information"
         onClick={(e) => e.stopPropagation()}
         onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
         {/* Handle */}

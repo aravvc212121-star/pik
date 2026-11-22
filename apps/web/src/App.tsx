@@ -61,15 +61,20 @@ function saveSetting(key: string, val: boolean): void {
 
 // ── Helpers ──
 
-function canShareFiles(): boolean {
-  if (typeof navigator === 'undefined' || !('share' in navigator)) return false;
-  if (!('canShare' in navigator)) return false;
-  try {
-    const testFile = new File(['test'], 'test.txt', { type: 'text/plain' });
-    return navigator.canShare({ files: [testFile] });
-  } catch {
-    return false;
+function canShareFiles(files?: File[]): boolean {
+  if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') return false;
+  if (typeof navigator.canShare === 'function') {
+    try {
+      if (files && files.length > 0) {
+        return navigator.canShare({ files });
+      }
+      const testFile = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
+      return navigator.canShare({ files: [testFile] });
+    } catch {
+      return false;
+    }
   }
+  return true;
 }
 
 async function downloadBlob(blob: Blob, name: string): Promise<void> {
@@ -133,6 +138,12 @@ export function App(): JSX.Element {
   // Session ref
   const sessionRef = useRef<Session | null>(null);
 
+  // Screen & privacy refs for popstate listener
+  const screenRef = useRef<AppScreen>(screen);
+  screenRef.current = screen;
+  const privacyOpenRef = useRef(privacyOpen);
+  privacyOpenRef.current = privacyOpen;
+
   // ── Cleanup ──
 
   const cleanup = useCallback(() => {
@@ -159,6 +170,68 @@ export function App(): JSX.Element {
     setCodeLoading(false);
     setRole(null);
   }, [cleanup]);
+
+  // ── Mobile native back navigation (popstate) ──
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.history) return;
+
+    if (screen === 'home') {
+      if (window.history.state?.screen && window.history.state.screen !== 'home') {
+        window.history.replaceState({ screen: 'home' }, '');
+      }
+    } else {
+      if (window.history.state?.screen !== screen) {
+        window.history.pushState({ screen }, '');
+      }
+    }
+  }, [screen]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.history) return;
+    if (privacyOpen) {
+      window.history.pushState({ privacy: true }, '');
+    }
+  }, [privacyOpen]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.history.replaceState({ screen: 'home' }, '');
+
+    const handlePopState = () => {
+      // 1. If privacy sheet is open, close it
+      if (privacyOpenRef.current) {
+        setPrivacyOpen(false);
+        return;
+      }
+
+      const curScreen = screenRef.current;
+      if (curScreen === 'home') return;
+
+      // 2. Step backward towards home
+      if (
+        curScreen === 'code-ready' ||
+        curScreen === 'code-connected' ||
+        curScreen === 'flick-ready' ||
+        curScreen === 'sending'
+      ) {
+        sessionRef.current?.cancel();
+        reset();
+      } else if (
+        curScreen === 'accept' ||
+        curScreen === 'waiting-for-throw' ||
+        curScreen === 'catching'
+      ) {
+        sessionRef.current?.declineFiles();
+        reset();
+      } else {
+        reset();
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [reset]);
 
   // ── Settings ──
 
@@ -381,18 +454,23 @@ export function App(): JSX.Element {
 
   const handleSaveGallery = useCallback(async () => {
     if (receivedFiles.length === 0) return;
-    const files = receivedFiles.map(f => new File([f.blob], f.name, { type: f.mimeType }));
+    const files = receivedFiles.map((f, i) => {
+      const mime = f.mimeType && f.mimeType.startsWith('image/') ? f.mimeType : 'image/jpeg';
+      const ext = mime === 'image/png' ? '.png' : mime === 'image/webp' ? '.webp' : '.jpg';
+      const name = f.name.includes('.') ? f.name : `photo_${i + 1}${ext}`;
+      return new File([f.blob], name, { type: mime, lastModified: Date.now() });
+    });
 
-    if (canShareFiles()) {
+    if (canShareFiles(files)) {
       try {
-        await navigator.share({ files });
+        await navigator.share({
+          files,
+          title: 'Save to Gallery',
+        });
         return;
-      } catch { /* fall through to download */ }
-    }
-
-    // Fallback: download individually
-    for (const f of receivedFiles) {
-      await downloadBlob(f.blob, f.name);
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') return;
+      }
     }
   }, [receivedFiles]);
 

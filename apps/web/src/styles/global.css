@@ -18,6 +18,8 @@ html {
   text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  touch-action: manipulation;
+  overscroll-behavior: none;
 }
 
 body {
@@ -27,6 +29,18 @@ body {
   color: var(--ink);
   background-color: var(--bg);
   min-height: 100dvh;
+  touch-action: manipulation;
+  overscroll-behavior: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#app {
+  width: 100%;
+  min-height: 100dvh;
+  touch-action: manipulation;
+  overscroll-behavior: none;
 }
 
 button {

@@ -157,12 +157,12 @@
   display: none;
 }
 
-/* Overlaid items: 24px from edges, 44px tall */
+/* Overlaid items: positioned neatly in the top corners */
 .home-overlay-tl {
   position: absolute;
-  top: 24px;
-  left: 24px;
-  height: 44px;
+  top: max(4px, env(safe-area-inset-top, 0px));
+  left: max(16px, env(safe-area-inset-left, 16px));
+  height: var(--icon-btn, 44px);
   display: flex;
   align-items: center;
   z-index: 10;
@@ -175,9 +175,9 @@
 
 .home-overlay-tr {
   position: absolute;
-  top: 24px;
-  right: 24px;
-  height: 44px;
+  top: max(4px, env(safe-area-inset-top, 0px));
+  right: max(6px, env(safe-area-inset-right, 6px));
+  height: var(--icon-btn, 44px);
   display: flex;
   align-items: center;
   z-index: 10;
@@ -227,13 +227,15 @@
   }
 
   .home-overlay-tl {
-    top: 32px;
-    left: 56px;
+    top: 14px;
+    left: 24px;
+    height: var(--icon-btn, 44px);
   }
 
   .home-overlay-tr {
-    top: 32px;
-    right: 56px;
+    top: 14px;
+    right: 14px;
+    height: var(--icon-btn, 44px);
   }
 
   /* On desktop dark side, privacy button uses dark theme colors */
@@ -258,12 +260,14 @@
   }
 
   .home-overlay-tl {
-    top: 16px;
-    left: 16px;
+    top: 4px;
+    left: 12px;
+    height: var(--icon-btn, 44px);
   }
 
   .home-overlay-tr {
-    top: 16px;
-    right: 16px;
+    top: 4px;
+    right: 4px;
+    height: var(--icon-btn, 44px);
   }
 }

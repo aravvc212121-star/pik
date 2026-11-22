@@ -11,3 +11,4 @@ export { ProgressRail } from './ProgressRail';
 export { StatusPill } from './StatusPill';
 export { Switch } from './Switch';
 export { Wordmark } from './Wordmark';
+export { PhotoPreviewModal } from './PhotoPreviewModal';

@@ -123,9 +123,9 @@
   --radius-file-icon: 14px;    /* file icons */
 
   /* ── Layout ── */
-  --page-pad-x: 24px;
-  --page-pad-top: 24px;
-  --page-pad-bottom: 28px;
+  --page-pad-x: 16px;
+  --page-pad-top: max(12px, env(safe-area-inset-top, 12px));
+  --page-pad-bottom: max(24px, env(safe-area-inset-bottom, 24px));
   --page-gap: 20px;
   --stack-gap: 12px;           /* button stacks */
 

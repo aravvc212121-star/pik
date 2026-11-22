@@ -1,9 +1,9 @@
 .wordmark {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: var(--text-wordmark);
-  color: var(--ink);
-  letter-spacing: var(--ls-display);
+  font-family: var(--font-body, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--ink, #0e0e10);
+  letter-spacing: -0.01em;
   line-height: 1;
   user-select: none;
 }

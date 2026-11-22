@@ -80,7 +80,7 @@ export function Home({ onSend, onReceive, onPrivacyClick }: HomeProps) {
               <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
                 <path
                   d="M13 20V6M6 13l7-7 7 7"
-                  stroke="white"
+                  stroke="var(--accent, #d4ff3a)"
                   stroke-width="2.4"
                   stroke-linecap="round"
                   stroke-linejoin="round"
@@ -102,6 +102,8 @@ export function Home({ onSend, onReceive, onPrivacyClick }: HomeProps) {
           aria-label="Receive photos"
         >
           <div class="home-half-content home-half-content--top">
+            <p class="home-tagline">Enter a code. Photos drop in.</p>
+            <h1 class="home-word">Receive</h1>
             <div class="home-icon-circle home-icon-circle--lime" aria-hidden="true">
               <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
                 <path
@@ -113,8 +115,6 @@ export function Home({ onSend, onReceive, onPrivacyClick }: HomeProps) {
                 />
               </svg>
             </div>
-            <h1 class="home-word">Receive</h1>
-            <p class="home-tagline">Enter a code. Photos drop in.</p>
           </div>
         </button>
       </div>

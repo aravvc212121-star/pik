@@ -69,6 +69,17 @@
   aspect-ratio: 1;
   border-radius: var(--radius-photo-grid);
   overflow: hidden;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.received-grid-item:active {
+  transform: scale(0.96);
+  opacity: 0.85;
 }
 
 .received-grid-img {
@@ -97,7 +108,7 @@
 @media (min-width: 900px) {
   .received-root .screen-container {
     max-width: 480px;
-    padding-top: 72px;
+    padding-top: 28px;
     padding-bottom: 48px;
   }
 }
