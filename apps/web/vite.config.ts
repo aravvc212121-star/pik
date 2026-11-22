@@ -100,8 +100,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,woff2,png,svg,ico}'],
       },
       manifest: {
-        name: 'PicBeam',
-        short_name: 'PicBeam',
+        name: 'Pik',
+        short_name: 'Pik',
         description: 'Send photos and videos directly to another device. No upload, no account, no compression.',
         display: 'standalone',
         orientation: 'portrait',
