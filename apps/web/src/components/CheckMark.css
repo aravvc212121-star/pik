@@ -1,0 +1,9 @@
+/* Light theme: add ink ring so lime circle is visible on white */
+[data-theme="light"] .checkmark__circle {
+  stroke: #0E0E10;
+  stroke-width: 2px;
+}
+
+[data-theme="dark"] .checkmark__circle {
+  stroke: none;
+}

@@ -2,64 +2,25 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  height: 44px;
+  flex-shrink: 0;
 }
 
-.header__brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.header__name {
-  font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: var(--text-logo);
-  color: var(--color-ink);
-}
-
-.header__private-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  height: var(--private-btn-h);
-  padding: 0 14px;
-  border-radius: var(--radius-pill);
-  background: var(--color-card);
-  border: 1px solid var(--color-card-border);
-  font-size: var(--text-meta);
-  font-weight: 500;
-  color: var(--color-muted);
+.header__right-action {
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: none;
   cursor: pointer;
-  min-width: 44px;
-  min-height: 44px;
+  padding: 0 4px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  transition: opacity 0.15s;
 }
 
-.header__private-btn:hover {
-  background: var(--color-page);
+.header__right-action:active {
+  opacity: 0.6;
 }
-
-/* Desktop top bar variant */
-@media (min-width: 900px) {
-  .header--desktop {
-    width: 100%;
-    background: var(--color-card);
-    padding: 18px 32px;
-    border-bottom: 1px solid var(--color-card-border);
-  }
-
-  .header--desktop .header__right {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .header--desktop .header__info {
-    font-size: var(--text-meta);
-    font-weight: 500;
-    color: var(--color-muted);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-}
-

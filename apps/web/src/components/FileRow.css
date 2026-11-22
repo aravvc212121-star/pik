@@ -1,0 +1,46 @@
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 0;
+}
+
+.file-row__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-file-icon, 14px);
+  background: var(--surface);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.file-row__info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+  flex: 1;
+}
+
+.file-row__name {
+  font-family: var(--font-body);
+  font-size: var(--text-row, 16px);
+  font-weight: 500;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.25;
+}
+
+.file-row__size {
+  font-family: var(--font-body);
+  font-size: var(--text-meta, 13px);
+  font-weight: 400;
+  color: var(--muted);
+  line-height: 1.2;
+}

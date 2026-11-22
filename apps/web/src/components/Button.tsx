@@ -1,38 +1,36 @@
 /**
- * Button components — Primary and Secondary
+ * Button — Primary, Secondary, Ghost variants.
  */
-import { JSX, ComponentChildren } from 'preact';
+import { JSX } from 'preact';
 import './Button.css';
 
 interface ButtonProps {
-  variant?: 'primary' | 'secondary';
+  label: string;
   onClick?: () => void;
   disabled?: boolean;
-  type?: 'button' | 'submit';
+  loading?: boolean;
+  variant?: 'primary' | 'secondary' | 'ghost';
   class?: string;
-  children: ComponentChildren;
-  'aria-label'?: string;
 }
 
 export function Button({
-  variant = 'primary',
+  label,
   onClick,
   disabled = false,
-  type = 'button',
+  loading = false,
+  variant = 'primary',
   class: className = '',
-  children,
-  ...rest
 }: ButtonProps): JSX.Element {
+  const cls = ['btn', `btn--${variant}`, className].filter(Boolean).join(' ');
+
   return (
     <button
-      type={type}
-      class={`btn btn--${variant} ${className}`}
+      class={cls}
       onClick={onClick}
-      disabled={disabled}
-      {...rest}
+      disabled={disabled || loading}
+      type="button"
     >
-      {children}
+      {loading ? 'Connecting…' : label}
     </button>
   );
 }
-

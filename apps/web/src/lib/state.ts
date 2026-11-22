@@ -1,47 +1,38 @@
 /**
- * PicBeam App State — central state management with Preact signals-style hooks
+ * PicBeam App State — central state management with Preact hooks
+ *
+ * Rewritten for the new Session interface and screen-based navigation
+ * (no more tabs).
  */
 
 import { useState, useCallback, useEffect, useRef } from 'preact/hooks';
-import type { FileManifestEntry } from '@picbeam/protocol';
-import type { FileStatus } from '../lib/transfer/index';
+import type { Session, ReceivedFileData, TransferProgress, FileInfo } from '../session';
 
-// ── Types ──
+// ── Screen Names ──
 
 export type AppScreen =
-  | 'send-pick'
-  | 'send-waiting'
-  | 'send-transferring'
-  | 'send-done'
+  | 'home'
+  | 'picking'
+  | 'code-ready'
+  | 'verify-words-sender'
+  | 'verify-words-receiver'
   | 'flick-ready'
-  | 'mid-throw'
-  | 'receive-scanner'
-  | 'receive-consent'
-  | 'receive-transferring'
-  | 'receive-done'
-  | 'catch-waiting'
+  | 'sending'
+  | 'sent'
+  | 'enter-code'
+  | 'accept'
+  | 'waiting-for-throw'
   | 'catching'
+  | 'received'
   | 'error';
 
-export interface TransferProgress {
-  bytesSent: number;
-  totalBytes: number;
-  speed: number;
-  timeLeft: number;
-  currentFile: number;
-  totalFiles: number;
-  fileStatuses: FileStatus[];
-}
+// ── Re-export ReceivedFileData as the canonical received-file type ──
 
-export interface ReceivedFile {
-  name: string;
-  blob: Blob;
-  mimeType: string;
-  objectUrl?: string;
-}
+export type { ReceivedFileData, TransferProgress, FileInfo };
+
+// ── App State ──
 
 export interface AppState {
-  activeTab: 'send' | 'receive';
   screen: AppScreen;
   privateSheetOpen: boolean;
   removeLocation: boolean;
@@ -50,57 +41,51 @@ export interface AppState {
   // Send state
   selectedFiles: File[];
   selectedThumbnails: string[];
-  sessionId: string | null;
-  secret: string | null;
-  qrUrl: string | null;
   code: string | null;
-  connectionState: 'waiting' | 'connected' | 'transferring' | 'done';
+  expiresAt: number | null;
+
+  // Verification
+  words: [string, string, string, string] | null;
 
   // Receive state
-  manifest: FileManifestEntry[] | null;
+  manifest: FileInfo[] | null;
   manifestTotalSize: number;
-  locationStripped: boolean;
 
   // Transfer progress
   progress: TransferProgress | null;
 
   // Received files
-  receivedFiles: ReceivedFile[];
+  receivedFiles: ReceivedFileData[];
 
   // Error
   errorTitle: string;
   errorMessage: string;
   errorAction: string;
-
-  // SAS words
-  sasWords: [string, string, string, string] | null;
+  errorCanRetry: boolean;
 }
 
 const defaultState: AppState = {
-  activeTab: 'send',
-  screen: 'send-pick',
+  screen: 'home',
   privateSheetOpen: false,
   removeLocation: true,
   hideIp: false,
   selectedFiles: [],
   selectedThumbnails: [],
-  sessionId: null,
-  secret: null,
-  qrUrl: null,
   code: null,
-  connectionState: 'waiting',
+  expiresAt: null,
+  words: null,
   manifest: null,
   manifestTotalSize: 0,
-  locationStripped: false,
   progress: null,
   receivedFiles: [],
   errorTitle: '',
   errorMessage: '',
   errorAction: '',
-  sasWords: null,
+  errorCanRetry: false,
 };
 
-/** Load persisted settings from localStorage */
+// ── Settings Persistence ──
+
 function loadSettings(): Partial<AppState> {
   try {
     const removeLocation = localStorage.getItem('picbeam:removeLocation');
@@ -114,7 +99,6 @@ function loadSettings(): Partial<AppState> {
   }
 }
 
-/** Save settings to localStorage */
 function saveSettings(state: Pick<AppState, 'removeLocation' | 'hideIp'>): void {
   try {
     localStorage.setItem('picbeam:removeLocation', String(state.removeLocation));
@@ -124,6 +108,8 @@ function saveSettings(state: Pick<AppState, 'removeLocation' | 'hideIp'>): void 
   }
 }
 
+// ── Hook ──
+
 export function useAppState() {
   const [state, setState] = useState<AppState>(() => ({
     ...defaultState,
@@ -132,7 +118,7 @@ export function useAppState() {
 
   const thumbnailUrls = useRef<string[]>([]);
 
-  // Revoke old object URLs when thumbnails change
+  // Revoke object URLs on unmount
   useEffect(() => {
     return () => {
       thumbnailUrls.current.forEach((url) => URL.revokeObjectURL(url));
@@ -143,62 +129,24 @@ export function useAppState() {
     setState((prev) => ({ ...prev, ...partial }));
   }, []);
 
-  const setTab = useCallback((tab: 'send' | 'receive') => {
-    const screen = tab === 'send' ? 'send-pick' : 'receive-scanner';
-    update({ activeTab: tab, screen });
+  const setScreen = useCallback((screen: AppScreen) => {
+    update({ screen });
   }, [update]);
 
   const setFiles = useCallback((files: File[]) => {
-    // Revoke old URLs
     thumbnailUrls.current.forEach((url) => URL.revokeObjectURL(url));
-
-    // Create new thumbnails
     const urls = files.slice(0, 12).map((f) => URL.createObjectURL(f));
     thumbnailUrls.current = urls;
-
     update({
       selectedFiles: files,
       selectedThumbnails: urls,
-      screen: files.length > 0 ? 'send-waiting' : 'send-pick',
+      screen: files.length > 0 ? 'picking' : 'home',
     });
   }, [update]);
 
-  const setRemoveLocation = useCallback((v: boolean) => {
-    update({ removeLocation: v });
-    saveSettings({ removeLocation: v, hideIp: state.hideIp });
-  }, [update, state.hideIp]);
-
-  const setHideIp = useCallback((v: boolean) => {
-    update({ hideIp: v });
-    saveSettings({ removeLocation: state.removeLocation, hideIp: v });
-  }, [update, state.removeLocation]);
-
-  const setError = useCallback((title: string, message: string, action: string) => {
-    update({
-      screen: 'error',
-      errorTitle: title,
-      errorMessage: message,
-      errorAction: action,
-    });
-  }, [update]);
-
-  const reset = useCallback(() => {
-    thumbnailUrls.current.forEach((url) => URL.revokeObjectURL(url));
-    thumbnailUrls.current = [];
-    setState((prev) => ({
-      ...defaultState,
-      removeLocation: prev.removeLocation,
-      hideIp: prev.hideIp,
-      activeTab: prev.activeTab,
-      screen: prev.activeTab === 'send' ? 'send-pick' : 'receive-scanner',
-    }));
-  }, []);
-
-  /** Remove a file by index; if none left, go back to send-pick */
   const removeFile = useCallback((index: number) => {
     setState((prev) => {
       const files = prev.selectedFiles.filter((_, i) => i !== index);
-      // Revoke the removed thumbnail
       if (prev.selectedThumbnails[index]) {
         URL.revokeObjectURL(prev.selectedThumbnails[index]);
       }
@@ -208,16 +156,14 @@ export function useAppState() {
         ...prev,
         selectedFiles: files,
         selectedThumbnails: thumbs,
-        screen: files.length > 0 ? prev.screen : 'send-pick' as AppScreen,
+        screen: files.length > 0 ? prev.screen : ('home' as AppScreen),
       };
     });
   }, []);
 
-  /** Add more files to the existing selection */
   const addFiles = useCallback((newFiles: File[]) => {
     setState((prev) => {
       const combined = [...prev.selectedFiles, ...newFiles];
-      // Create thumbnails only for new files that fit within the display limit
       const existingCount = prev.selectedThumbnails.length;
       const maxThumbs = 12;
       const slotsLeft = Math.max(0, maxThumbs - existingCount);
@@ -232,10 +178,40 @@ export function useAppState() {
     });
   }, []);
 
+  const setRemoveLocation = useCallback((v: boolean) => {
+    update({ removeLocation: v });
+    saveSettings({ removeLocation: v, hideIp: state.hideIp });
+  }, [update, state.hideIp]);
+
+  const setHideIp = useCallback((v: boolean) => {
+    update({ hideIp: v });
+    saveSettings({ removeLocation: state.removeLocation, hideIp: v });
+  }, [update, state.removeLocation]);
+
+  const setError = useCallback((title: string, message: string, action: string, canRetry = false) => {
+    update({
+      screen: 'error',
+      errorTitle: title,
+      errorMessage: message,
+      errorAction: action,
+      errorCanRetry: canRetry,
+    });
+  }, [update]);
+
+  const reset = useCallback(() => {
+    thumbnailUrls.current.forEach((url) => URL.revokeObjectURL(url));
+    thumbnailUrls.current = [];
+    setState((prev) => ({
+      ...defaultState,
+      removeLocation: prev.removeLocation,
+      hideIp: prev.hideIp,
+    }));
+  }, []);
+
   return {
     state,
     update,
-    setTab,
+    setScreen,
     setFiles,
     removeFile,
     addFiles,
@@ -246,7 +222,9 @@ export function useAppState() {
   };
 }
 
-/** Format bytes to human readable */
+// ── Utility Functions ──
+
+/** Format bytes to human-readable string */
 export function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -255,7 +233,7 @@ export function formatBytes(bytes: number): string {
   return `${val < 10 ? val.toFixed(1) : Math.round(val)} ${units[i]}`;
 }
 
-/** Format seconds to human readable time */
+/** Format seconds to human-readable time remaining */
 export function formatTime(seconds: number): string {
   if (!isFinite(seconds) || seconds <= 0) return '';
   if (seconds < 60) return `about ${Math.ceil(seconds)} s left`;
@@ -264,7 +242,7 @@ export function formatTime(seconds: number): string {
   return `about ${mins} min ${secs} s left`;
 }
 
-/** Format speed to human readable */
+/** Format speed to human-readable string */
 export function formatSpeed(bytesPerSec: number): string {
   return `${formatBytes(bytesPerSec)}/s`;
 }

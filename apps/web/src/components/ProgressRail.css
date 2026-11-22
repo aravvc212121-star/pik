@@ -1,0 +1,15 @@
+.progress-rail {
+  width: 100%;
+  height: var(--progress-h);
+  background: var(--line);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.progress-rail__fill {
+  height: 100%;
+  background: var(--btn-primary-bg);
+  border-radius: var(--radius-pill);
+  width: calc(var(--progress-value, 0) * 100%);
+  transition: width 0.3s ease;
+}

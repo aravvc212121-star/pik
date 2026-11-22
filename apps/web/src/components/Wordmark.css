@@ -1,0 +1,9 @@
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--text-wordmark);
+  color: var(--ink);
+  letter-spacing: var(--ls-display);
+  line-height: 1;
+  user-select: none;
+}

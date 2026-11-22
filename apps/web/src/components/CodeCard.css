@@ -1,0 +1,51 @@
+.code-card {
+  background: #D4FF3A;
+  border-radius: var(--radius-code-card);
+  padding: 32px 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.code-card__code {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--text-code);
+  color: #0E0E10;
+  line-height: var(--lh-code);
+  letter-spacing: 1px;
+  margin: 0;
+  user-select: text;
+  cursor: text;
+  letter-spacing: 0.04em;
+}
+
+.code-card__expiry {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.code-card__rail {
+  width: 100%;
+  height: 4px;
+  background: rgba(14, 14, 16, 0.15);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.code-card__rail-fill {
+  height: 100%;
+  background: #0E0E10;
+  border-radius: var(--radius-pill);
+  width: calc(var(--expiry-progress, 1) * 100%);
+  transition: width 1s linear;
+}
+
+.code-card__time {
+  font-family: var(--font-body);
+  font-size: var(--text-meta);
+  font-weight: 500;
+  color: #0E0E10;
+}

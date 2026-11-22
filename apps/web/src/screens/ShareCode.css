@@ -1,0 +1,98 @@
+/* ShareCode.css */
+
+.sharecode-root {
+  position: fixed;
+  inset: 0;
+  background-color: var(--bg, #ffffff);
+  color: var(--ink, #0e0e10);
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  justify-content: center;
+}
+
+.sharecode-root .screen-container {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: var(--page-pad-top, 24px) var(--page-pad-x, 24px) var(--page-pad-bottom, 28px);
+  box-sizing: border-box;
+}
+
+.sharecode-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 16px;
+  min-width: 0;
+  padding: 24px 0;
+}
+
+.sharecode-title {
+  font-family: var(--font-display, 'Bricolage Grotesque', sans-serif);
+  font-weight: 800;
+  font-size: var(--text-title, 44px);
+  line-height: var(--lh-title, 1.02);
+  letter-spacing: var(--ls-display, -0.02em);
+  color: var(--ink, #0e0e10);
+  margin: 0;
+}
+
+.sharecode-card-wrap {
+  width: 100%;
+  max-width: 320px;
+  transition: opacity 0.3s ease;
+}
+
+.sharecode-card-wrap--faded {
+  opacity: 0.4;
+}
+
+.sharecode-pill-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.sharecode-info {
+  font-family: var(--font-body, 'Inter', sans-serif);
+  font-size: var(--text-body, 15px);
+  line-height: var(--lh-body, 1.45);
+  color: var(--muted, #6a6a74);
+  max-width: 300px;
+  margin: 0;
+}
+
+.sharecode-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack-gap, 12px);
+  padding-top: 16px;
+}
+
+/* Desktop */
+@media (min-width: 900px) {
+  .sharecode-root .screen-container {
+    max-width: 480px;
+    padding-top: 72px;
+    padding-bottom: 48px;
+  }
+}
+
+/* Narrow guard */
+@media (max-width: 319px) {
+  .sharecode-root .screen-container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .sharecode-title {
+    font-size: 34px;
+  }
+}

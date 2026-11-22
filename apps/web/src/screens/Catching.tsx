@@ -1,14 +1,12 @@
 /**
- * Catching screen (Receiver state 2)
- *
- * Shows the tray receiving photos in real-time with landing animations.
+ * Catching — Dark-theme transfer progress. Thumbnails fill a 4-column tray.
+ * Next slot has lime dashed border.
  */
-
 import { JSX } from 'preact';
-import { CatchTray } from '../components/CatchTray';
-import { ProgressBar } from '../components/ProgressBar';
+import { useEffect, useRef } from 'preact/hooks';
+import { Header } from '../components/Header';
 import { Button } from '../components/Button';
-import { formatBytes, formatSpeed } from '../lib/state';
+import { ProgressRail } from '../components/ProgressRail';
 import './Catching.css';
 
 interface CatchingProps {
@@ -21,6 +19,15 @@ interface CatchingProps {
   onCancel: () => void;
 }
 
+function formatMB(bytes: number): string {
+  return (bytes / (1024 * 1024)).toFixed(1);
+}
+
+function formatSpeed(bytesPerSec: number): string {
+  if (bytesPerSec < 1024 * 1024) return `${(bytesPerSec / 1024).toFixed(1)} KB/s`;
+  return `${(bytesPerSec / (1024 * 1024)).toFixed(1)} MB/s`;
+}
+
 export function Catching({
   completedCount,
   totalFiles,
@@ -29,44 +36,65 @@ export function Catching({
   speed,
   receivedThumbnails,
   onCancel,
-}: CatchingProps): JSX.Element {
-  const percent = totalBytes > 0 ? Math.round((bytesReceived / totalBytes) * 100) : 0;
+}: CatchingProps) {
+  const progress = totalBytes > 0 ? Math.min(1, bytesReceived / totalBytes) : 0;
+  const slotsToShow = Math.max(12, totalFiles);
+  const slots = Array.from({ length: slotsToShow });
+  const trayRef = useRef<HTMLDivElement>(null);
+
+  // Keep newest slot visible
+  useEffect(() => {
+    if (trayRef.current && completedCount > 0) {
+      const slotElements = trayRef.current.children;
+      const nextIndex = Math.min(completedCount, slotElements.length - 1);
+      const el = slotElements[nextIndex] as HTMLElement | undefined;
+      el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [completedCount]);
 
   return (
-    <div class="catching">
-      {/* Screen reader live announcement */}
-      <div
-        class="sr-only"
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        {`Received ${completedCount} of ${totalFiles} photos.`}
-      </div>
+    <div class="screen-page catching-root" data-theme="dark">
+      <div class="screen-container">
+        <Header mode="close" onBack={onCancel} />
 
-      {/* Grid tray with falling animation */}
-      <CatchTray
-        totalFiles={totalFiles}
-        receivedThumbnails={receivedThumbnails}
-        isTransferring={true}
-      />
+        {/* Top stage for future drop animation */}
+        <div class="catching-stage" aria-hidden="true" />
 
-      {/* Progress card */}
-      <div class="catching__progress-card">
-        <h2 class="catching__title">
-          Catching {completedCount} of {totalFiles}
-        </h2>
+        {/* Tray */}
+        <div class="catching-tray" ref={trayRef}>
+          {slots.map((_, i) => {
+            const thumb = receivedThumbnails[i];
+            const isFilled = i < completedCount;
+            const isNext = i === completedCount;
 
-        <ProgressBar progress={percent} aria-label="Catching progress" />
+            return (
+              <div
+                key={i}
+                class={`catching-slot ${isNext ? 'catching-slot--next' : ''} ${!isFilled && !isNext ? 'catching-slot--empty' : ''}`}
+              >
+                {isFilled && thumb && (
+                  <img src={thumb} alt="" class="catching-slot__img" />
+                )}
+              </div>
+            );
+          })}
+        </div>
 
-        <div class="catching__meta">
-          {formatBytes(bytesReceived)} of {formatBytes(totalBytes)} · {formatSpeed(speed)}
+        {/* Info area */}
+        <div class="catching-info">
+          <h2 class="catching-title">
+            Catching {completedCount} of {totalFiles}
+          </h2>
+          <ProgressRail progress={progress} />
+          <p class="catching-meta">
+            {formatMB(bytesReceived)} of {formatMB(totalBytes)} MB · {formatSpeed(speed)}
+          </p>
+        </div>
+
+        <div class="catching-footer">
+          <Button variant="ghost" label="Cancel" onClick={onCancel} />
         </div>
       </div>
-
-      <Button variant="secondary" onClick={onCancel}>
-        Cancel
-      </Button>
     </div>
   );
 }

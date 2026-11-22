@@ -1,27 +1,28 @@
 .status-pill {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border-radius: var(--radius-pill);
-  background: var(--color-pill-bg);
+  gap: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-body);
   font-size: var(--text-meta);
   font-weight: 500;
-  color: var(--color-ink);
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  line-height: 1;
 }
 
 .status-pill__dot {
-  width: var(--dot-size);
-  height: var(--dot-size);
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
-.status-pill__dot--waiting {
-  background: var(--color-dot-waiting);
+.status-pill--waiting .status-pill__dot {
+  background: var(--status-waiting);
 }
 
-.status-pill__dot--connected {
-  background: var(--color-dot-connected);
+.status-pill--connected .status-pill__dot {
+  background: var(--status-connected);
 }
-

@@ -1,23 +1,19 @@
 /**
- * StatusPill — shows connection state with colored dot
+ * StatusPill — inline pill with 8px status dot.
  */
 import { JSX } from 'preact';
 import './StatusPill.css';
 
 interface StatusPillProps {
   status: 'waiting' | 'connected';
-  text: string;
+  label: string;
 }
 
-export function StatusPill({ status, text }: StatusPillProps): JSX.Element {
+export function StatusPill({ status, label }: StatusPillProps): JSX.Element {
   return (
-    <div class="status-pill" role="status" aria-live="polite">
-      <span
-        class={`status-pill__dot status-pill__dot--${status}`}
-        aria-hidden="true"
-      />
-      <span class="status-pill__text">{text}</span>
-    </div>
+    <span class={`status-pill status-pill--${status}`}>
+      <span class="status-pill__dot" aria-hidden="true" />
+      {label}
+    </span>
   );
 }
-

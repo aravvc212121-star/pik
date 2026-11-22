@@ -1,0 +1,137 @@
+/* PickPhotos.css */
+
+.pickphotos-root {
+  position: fixed;
+  inset: 0;
+  background-color: var(--bg, #ffffff);
+  color: var(--ink, #0e0e10);
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  justify-content: center;
+}
+
+.pickphotos-hidden-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pickphotos-root .screen-container {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: var(--page-pad-top, 24px) var(--page-pad-x, 24px) var(--page-pad-bottom, 28px);
+  box-sizing: border-box;
+  gap: var(--page-gap, 20px);
+}
+
+.pickphotos-title-area {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pickphotos-title {
+  font-family: var(--font-display, 'Bricolage Grotesque', sans-serif);
+  font-weight: 800;
+  font-size: var(--text-title, 44px);
+  line-height: var(--lh-title, 1.02);
+  letter-spacing: var(--ls-display, -0.02em);
+  color: var(--ink, #0e0e10);
+  margin: 0;
+}
+
+.pickphotos-subtitle {
+  font-family: var(--font-body, 'Inter', sans-serif);
+  font-size: var(--text-body, 15px);
+  line-height: var(--lh-body, 1.45);
+  color: var(--muted, #6a6a74);
+  margin: 0;
+}
+
+/* 3-column grid, gap 6, scrolling, flex: 1 */
+.pickphotos-grid-area {
+  flex: 1;
+  min-height: 160px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -4px;
+  padding: 4px;
+}
+
+.pickphotos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.pickphotos-grid-item {
+  position: relative;
+  aspect-ratio: 1;
+  min-width: 0;
+}
+
+/* Add tile */
+.pickphotos-add-tile {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-photo, 18px);
+  border: 1.5px dashed var(--dashed-border, #c9c9cf);
+  background-color: var(--surface, #f3f3f5);
+  color: var(--ink, #0e0e10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+  padding: 0;
+}
+
+.pickphotos-add-tile:hover {
+  background-color: #eaeaea;
+  border-color: var(--ink, #0e0e10);
+}
+
+.pickphotos-add-tile:focus-visible {
+  outline: 2px solid var(--ink, #0e0e10);
+  outline-offset: 2px;
+}
+
+.pickphotos-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* =====================
+   Desktop (≥900px)
+   ===================== */
+@media (min-width: 900px) {
+  .pickphotos-root .screen-container {
+    max-width: 480px;
+    padding-top: 72px;
+    padding-bottom: 48px;
+  }
+}
+
+/* =====================
+   Narrow (<320px) guard
+   ===================== */
+@media (max-width: 319px) {
+  .pickphotos-root .screen-container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .pickphotos-title {
+    font-size: 34px;
+  }
+}

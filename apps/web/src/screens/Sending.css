@@ -1,0 +1,100 @@
+/* Sending.css */
+
+.sending-root {
+  position: fixed;
+  inset: 0;
+  background-color: var(--bg, #ffffff);
+  color: var(--ink, #0e0e10);
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  justify-content: center;
+}
+
+.sending-root .screen-container {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: var(--page-pad-top, 24px) var(--page-pad-x, 24px) var(--page-pad-bottom, 28px);
+  box-sizing: border-box;
+}
+
+/* Flight stage: flex:1, overflow hidden */
+.flight-stage {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  min-height: 180px;
+}
+
+/* Transfer stats */
+.sending-info-area {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0 24px;
+}
+
+/* Counter: Bricolage 800 64px */
+.sending-counter {
+  font-family: var(--font-display, 'Bricolage Grotesque', sans-serif);
+  font-weight: 800;
+  font-size: var(--text-counter, 64px);
+  line-height: 1;
+  letter-spacing: var(--ls-display, -0.02em);
+  margin: 0;
+}
+
+.sending-counter__current {
+  color: var(--ink, #0e0e10);
+}
+
+.sending-counter__total {
+  color: var(--muted, #6a6a74);
+  font-weight: 800;
+}
+
+.sending-rail-wrap {
+  width: 100%;
+}
+
+.sending-meta {
+  font-family: var(--font-body, 'Inter', sans-serif);
+  font-size: var(--text-body, 15px);
+  line-height: var(--lh-body, 1.45);
+  color: var(--muted, #6a6a74);
+  margin: 0;
+}
+
+.sending-footer {
+  display: flex;
+  justify-content: center;
+  padding-top: 8px;
+}
+
+/* =====================
+   Desktop (≥900px)
+   ===================== */
+@media (min-width: 900px) {
+  .sending-root .screen-container {
+    max-width: 480px;
+    padding-top: 72px;
+    padding-bottom: 48px;
+  }
+}
+
+/* =====================
+   Narrow (<320px) guard
+   ===================== */
+@media (max-width: 319px) {
+  .sending-root .screen-container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .sending-counter {
+    font-size: 48px;
+  }
+}

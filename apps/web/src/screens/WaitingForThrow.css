@@ -1,0 +1,98 @@
+/* WaitingForThrow.css — dark-theme waiting screen */
+
+.waitthrow-root {
+  position: fixed;
+  inset: 0;
+  background-color: var(--bg);
+  color: var(--text);
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  justify-content: center;
+}
+
+.waitthrow-root .screen-container {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: var(--page-pad-top) var(--page-pad-x) var(--page-pad-bottom);
+  box-sizing: border-box;
+  gap: var(--page-gap);
+}
+
+.waitthrow-top {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 16px;
+  min-width: 0;
+  padding: 24px 0;
+}
+
+.waitthrow-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 40px;
+  line-height: 1.05;
+  letter-spacing: var(--ls-display);
+  color: var(--text);
+  margin: 0;
+  max-width: 300px;
+}
+
+.waitthrow-meta {
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  color: var(--muted);
+  margin: 0;
+}
+
+/* 4×3 tray of dashed slots */
+.waitthrow-tray {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.waitthrow-slot {
+  aspect-ratio: 1;
+  border-radius: var(--radius-photo-grid);
+  border: 1.5px dashed var(--dashed-border);
+}
+
+.waitthrow-slot--next {
+  border: 2px dashed var(--accent);
+}
+
+.waitthrow-footer {
+  display: flex;
+  justify-content: center;
+  padding-top: 8px;
+}
+
+/* Desktop */
+@media (min-width: 900px) {
+  .waitthrow-root .screen-container {
+    max-width: 480px;
+    padding-top: 72px;
+    padding-bottom: 48px;
+  }
+}
+
+/* Narrow guard */
+@media (max-width: 319px) {
+  .waitthrow-root .screen-container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .waitthrow-title {
+    font-size: 30px;
+  }
+}

@@ -1,0 +1,212 @@
+/* FlickToThrow.css */
+
+.flick-root {
+  position: fixed;
+  inset: 0;
+  background-color: var(--bg, #ffffff);
+  color: var(--ink, #0e0e10);
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  justify-content: center;
+}
+
+.flick-root .screen-container {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: var(--page-pad-top, 24px) var(--page-pad-x, 24px) var(--page-pad-bottom, 28px);
+  box-sizing: border-box;
+}
+
+.flick-title-area {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.flick-title {
+  font-family: var(--font-display, 'Bricolage Grotesque', sans-serif);
+  font-weight: 800;
+  font-size: var(--text-title, 44px);
+  line-height: var(--lh-title, 1.02);
+  letter-spacing: var(--ls-display, -0.02em);
+  color: var(--ink, #0e0e10);
+  margin: 0;
+}
+
+.flick-subtitle {
+  font-family: var(--font-body, 'Inter', sans-serif);
+  font-size: var(--text-body, 15px);
+  line-height: var(--lh-body, 1.45);
+  color: var(--muted, #6a6a74);
+  margin: 0;
+}
+
+/* Bottom-center stack layout */
+.flick-action-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 8px;
+  min-width: 0;
+}
+
+/* Chevrons */
+.flick-chevrons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  color: var(--ink, #0e0e10);
+}
+
+.flick-chevron {
+  display: block;
+}
+
+.flick-chevron--top {
+  opacity: 0.25;
+}
+
+.flick-chevron--mid {
+  opacity: 0.55;
+}
+
+.flick-chevron--bot {
+  opacity: 1;
+}
+
+/* Vertical dashed guide line: 56px tall, 2px dashed, margin 6/0/10 */
+.flick-dashed-guide {
+  width: 0;
+  height: 56px;
+  border-left: 2px dashed var(--dashed-border, #c9c9cf);
+  margin: 6px 0 10px;
+}
+
+/* Card stack container: 240×300 */
+.flick-stack-container {
+  position: relative;
+  width: 240px;
+  height: 300px;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+  border-radius: var(--radius-card, 26px);
+}
+
+.flick-stack-container:active {
+  cursor: grabbing;
+}
+
+.flick-stack-container:focus-visible {
+  outline: 2px solid var(--ink, #0e0e10);
+  outline-offset: 4px;
+}
+
+/* Base card: 200×262 */
+.flick-card {
+  position: absolute;
+  width: 200px;
+  height: 262px;
+  border-radius: var(--radius-card, 26px);
+  background-color: var(--surface, #f3f3f5);
+  overflow: hidden;
+  transform-origin: center bottom;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Back card: rotated -8° offset(10, 24) */
+.flick-card--back {
+  left: 10px;
+  top: 24px;
+  transform: rotate(-8deg);
+  z-index: 1;
+}
+
+/* Middle card: rotated 7° offset(30, 18) */
+.flick-card--mid {
+  left: 30px;
+  top: 18px;
+  transform: rotate(7deg);
+  z-index: 2;
+}
+
+/* Front card: rotated 0° offset(20, 10) */
+.flick-card--front {
+  left: 20px;
+  top: 10px;
+  transform: rotate(0deg);
+  z-index: 3;
+}
+
+.flick-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.flick-card-placeholder {
+  width: 100%;
+  height: 100%;
+  background: var(--surface, #f3f3f5);
+}
+
+/* Lime photo count pill on front card */
+.flick-card-pill {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  background: var(--accent, #D4FF3A);
+  color: #0E0E10;
+  font-family: var(--font-body);
+  font-size: var(--text-meta, 13px);
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  line-height: 1.2;
+}
+
+/* Ghost button centered under stack */
+.flick-tap-instead {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+/* =====================
+   Desktop (≥900px)
+   ===================== */
+@media (min-width: 900px) {
+  .flick-root .screen-container {
+    max-width: 480px;
+    padding-top: 72px;
+    padding-bottom: 48px;
+  }
+}
+
+/* =====================
+   Narrow (<320px) guard
+   ===================== */
+@media (max-width: 319px) {
+  .flick-root .screen-container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .flick-title {
+    font-size: 34px;
+  }
+
+  .flick-stack-container {
+    transform: scale(0.9);
+  }
+}

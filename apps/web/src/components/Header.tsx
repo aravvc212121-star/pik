@@ -1,31 +1,30 @@
 /**
- * Header component: logo + name on left, Private button on right
+ * Header — 44px tall row: left icon button, optional right ghost button.
  */
 import { JSX } from 'preact';
-import { LogoIcon, LockIcon } from './Icons';
+import { IconButton } from './IconButton';
 import './Header.css';
 
 interface HeaderProps {
-  onPrivateClick: () => void;
+  mode: 'back' | 'close';
+  onBack?: () => void;
+  rightAction?: string;
+  onRightAction?: () => void;
 }
 
-export function Header({ onPrivateClick }: HeaderProps): JSX.Element {
+export function Header({ mode, onBack, rightAction, onRightAction }: HeaderProps): JSX.Element {
   return (
     <header class="header">
-      <div class="header__brand">
-        <LogoIcon size={30} />
-        <span class="header__name">PicBeam</span>
-      </div>
-      <button
-        type="button"
-        class="header__private-btn"
-        onClick={onPrivateClick}
-        aria-label="Privacy settings"
-      >
-        <LockIcon size={14} />
-        <span>Private</span>
-      </button>
+      <IconButton
+        aria-label={mode === 'back' ? 'Go back' : 'Close'}
+        icon={mode === 'back' ? 'chevron-left' : 'close'}
+        onClick={onBack}
+      />
+      {rightAction && (
+        <button class="header__right-action" type="button" onClick={onRightAction}>
+          {rightAction}
+        </button>
+      )}
     </header>
   );
 }
-
